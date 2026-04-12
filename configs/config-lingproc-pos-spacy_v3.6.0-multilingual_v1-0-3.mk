@@ -3,9 +3,9 @@ USE_CANONICAL ?= 1
 NEWSPAPER_HAS_PROVIDER ?= 1
 LOGGING_LEVEL ?= DEBUG
 SHELL ?= /bin/bash 
-S3_BUCKET_REBUILT ?= 121-rebuilt-staging
+S3_BUCKET_REBUILT ?= 122-rebuilt-final
 LINGPROC_LANGIDENT_NEEDED ?= 0
-NEWSPAPER_FNMATCH ?= BL/*
+NEWSPAPER_FNMATCH ?= BNF/*
 
 S3_BUCKET_LINGPROC ?= 142-processed-data-final
 RUN_VERSION_LINGPROC ?= v1-0-3
@@ -44,7 +44,7 @@ LINGPROC_LANGIDENT_NEEDED ?= 0
 # # NEWSPAPER_YEAR_SORTING ?= cat
 
 # # The input bucket for rebuilt data
-S3_BUCKET_REBUILT ?= 121-rebuilt-staging
+S3_BUCKET_REBUILT ?= 122-rebuilt-final
 
 # # The input bucket for processed data
 # IN_S3_BUCKET_PROCESSED_DATA ?= 42-processed-data-final
@@ -79,4 +79,4 @@ S3_BUCKET_REBUILT ?= 121-rebuilt-staging
 # PROCESSING_KEEP_TIMESTAMP_ONLY_OPTION ?= --keep-timestamp-only
 
 # # Quit the processing if the output file already exists in S3
-# PROCESSING_QUIT_IF_S3_OUTPUT_EXISTS_OPTION ?= --quit-if-s3-output-exists
+PROCESSING_QUIT_IF_S3_OUTPUT_EXISTS_OPTION ?= --quit-if-s3-output-exists

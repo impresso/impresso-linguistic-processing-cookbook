@@ -121,3 +121,6 @@ include cookbook/local_to_s3.mk
 
 # Include testing and inspection utilities
 include cookbook-repo-addons/test_eyeball_lingproc.mk
+
+# lemmafreq tooling
+include cookbook-repo-addons/lemmafreq.mk
