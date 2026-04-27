@@ -33,7 +33,7 @@ sudo bash cookbook/install_brew.sh
 This repository uses `pipenv`.
 
 ```sh
-git clone https://github.com/impresso/impresso-linguistic-processing.git
+git clone --recursive https://github.com/impresso/impresso-linguistic-processing.git
 cd impresso-linguistic-processing
 python3.11 -mpip install pipenv
 python3.11 -mpipenv install
