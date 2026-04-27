@@ -81,6 +81,31 @@ make clean                   # clean build artifacts
 make clean-build             # remove all generated files
 ```
 
+### Lemma Frequency Targets
+
+Lemma frequency computation is implemented as newspaper/language build targets.
+For example, `compute-lemma-frequencies-BL/AATA-en` reads all matching
+year-level linguistic-processing files below:
+
+```text
+s3://<processed-bucket>/lingproc/<run-id>/BL/AATA/
+```
+
+and writes one newspaper-level output:
+
+```text
+s3://<component-bucket>/lemma-freq/<run-id>/en/BL/AATA.lemmafreq.json.bz2
+```
+
+The build does not track individual S3 newspaper-year files as Make
+prerequisites. If a single year file is regenerated or replaced on S3, the
+smallest supported recomputation unit is the whole newspaper for that language.
+Delete the corresponding newspaper-level lemma frequency output and its `.wip`
+marker, then rerun the language target.
+
+The language-level aggregation targets, such as `aggregate-lemma-frequencies-en`,
+merge the newspaper-level outputs into `ALL.lemmafreq.json.bz2`.
+
 ## Processing options
 
 For newspaper processing, several options are available:

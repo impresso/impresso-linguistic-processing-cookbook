@@ -4,6 +4,16 @@
 #
 # The cookbook owns generic S3/local orchestration helpers. This add-on owns the
 # lemma statistics product and calls the Rust counter through lib/s3_lemmafreq.py.
+#
+# Build granularity:
+# Lemma frequency compute targets are newspaper/language targets. A target such
+# as compute-lemma-frequencies-BL/AATA-en reads all matching year-level
+# linguistic-processing JSONL files below the newspaper prefix and writes one
+# newspaper-level lemma frequency file for that language. Make does not track
+# individual S3 newspaper-year inputs as prerequisites here. If one year-level
+# input file is replaced on S3, delete the corresponding newspaper-level
+# lemmafreq output and WIP marker, then rerun the language target; the whole
+# newspaper/language aggregate is recomputed.
 
 PYTHON ?= python3
 CARGO ?= cargo
@@ -205,6 +215,9 @@ compute-lemma-frequencies-%-en: $(LEMMAFREQ_BIN)
 
 # Explicitly generate per-newspaper targets so newspaper ids containing provider
 # prefixes, such as BNF/legaulois, are matched as full target names.
+# Each generated target computes one newspaper/language aggregate. The recipe
+# intentionally checks only the final newspaper-level S3 output and WIP marker;
+# it does not inspect timestamps of individual year-level lingproc input files.
 define compute_lemma_frequency_rule
 compute-lemma-frequencies-$(1)-$(2): $(LEMMAFREQ_BIN)
 	@mkdir -p $(dir $(call lemmafreq_json_path,$(1),$(2)))
@@ -242,6 +255,9 @@ $(foreach newspaper,$(ALL_NEWSPAPERS),$(foreach language,de fr en,$(eval $(call 
 
 # PATTERN-RULE: aggregate-lemma-frequencies-%
 #: Combine newspaper lemma frequency distributions for a language
+# This target merges the newspaper-level outputs for one language into the
+# corpus-level ALL.lemmafreq.json.bz2 file. It assumes newspaper-level outputs
+# have already been computed or deliberately skipped by the S3 preflight.
 aggregate-lemma-frequencies-%:
 	@mkdir -p $(LOCAL_LEMMA_FREQS_BASE_PATH)/$*
 	$(PYTHON) lib/s3_lemmafreq.py merge \
