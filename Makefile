@@ -60,11 +60,11 @@ include cookbook/setup.mk
 # Load setup rules for linguistic processing
 include cookbook/setup_lingproc.mk
 
-# Load newspaper list configuration and processing rules
-include cookbook/newspaper_list.mk
-
 # Load input path definitions for rebuilt content
 include cookbook/paths_rebuilt.mk
+
+# Load newspaper list configuration and processing rules
+include cookbook/newspaper_list.mk
 
 # Load input path definitions for language identification
 include cookbook/paths_langident.mk
