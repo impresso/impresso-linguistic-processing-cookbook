@@ -94,11 +94,11 @@ check-rust-toolchain:
 	fi
 
 
-$(LEMMAFREQ_BIN): check-rust-toolchain $(LEMMAFREQ_RUST_SOURCES)
+$(LEMMAFREQ_BIN): $(LEMMAFREQ_RUST_SOURCES) | check-rust-toolchain
 	$(MAKE_SILENCE_RECIPE)$(CARGO) build --release --manifest-path lemmafreq/Cargo.toml
 
 
-setup-lemmafreq: $(LEMMAFREQ_BIN)
+setup-lemmafreq: check-rust-toolchain $(LEMMAFREQ_BIN)
 
 
 lemmafreq-setup: setup-lemmafreq
