@@ -170,6 +170,20 @@ mod tests {
     }
 
     #[test]
+    fn counts_current_lingproc_tokens_without_lemmas() {
+        let input = r#"{"ci_id":"AATA-1846-02-21-a-i0001","tsents":[{"lg":"en","tokens":[{"t":"N.O.","p":"PROPN","o":0},{"t":"3","p":"NUM","o":5}]}],"sents":[{"lg":"en","tokens":[{"t":"MARK","p":"PROPN","o":10},{"t":"LANE.-LAST","p":"PROPN","o":15},{"t":"MPOrt","p":"VERB","o":53,"l":"mport"},{"t":"list","p":"NOUN","o":59},{"t":"arrivals","p":"NOUN","o":78,"l":"arrival"},{"t":"for","p":"ADP","o":87}]}]}"#;
+
+        let freq = collect(input, "en", &["PROPN", "NOUN"], 2);
+
+        assert_eq!(freq.get("n.o."), Some(&1));
+        assert_eq!(freq.get("mark"), Some(&1));
+        assert_eq!(freq.get("lane.-last"), Some(&1));
+        assert_eq!(freq.get("list"), Some(&1));
+        assert_eq!(freq.get("arrival"), Some(&1));
+        assert!(!freq.contains_key("mport"));
+    }
+
+    #[test]
     fn filters_by_language_pos_and_min_length() {
         let input = r#"{"sents":[{"lg":"de","tok":[{"p":"NOUN","l":"Ab"},{"p":"NOUN","l":"A"},{"p":"ADJ","l":"Gross"}]},{"lg":"fr","tok":[{"p":"NOUN","l":"Maison"}]}]}"#;
 

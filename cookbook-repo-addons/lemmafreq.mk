@@ -15,6 +15,12 @@ LEMMAFREQ_BIN ?= lemmafreq/target/release/aggregate_lemma_frequencies
   $(call log.debug, LEMMAFREQ_BIN)
 
 
+# VARIABLE: LEMMAFREQ_RUST_SOURCES
+# Rust sources and Cargo metadata that should trigger a binary rebuild.
+LEMMAFREQ_RUST_SOURCES := lemmafreq/Cargo.toml $(wildcard lemmafreq/Cargo.lock) $(wildcard lemmafreq/*.rs)
+  $(call log.debug, LEMMAFREQ_RUST_SOURCES)
+
+
 # USER-VARIABLE: LEMMAFREQ_POS_TAGS
 # POS tags included in lemma frequency aggregation.
 LEMMAFREQ_POS_TAGS ?= PROPN,NOUN
@@ -88,7 +94,7 @@ check-rust-toolchain:
 	fi
 
 
-$(LEMMAFREQ_BIN): check-rust-toolchain
+$(LEMMAFREQ_BIN): check-rust-toolchain $(LEMMAFREQ_RUST_SOURCES)
 	$(MAKE_SILENCE_RECIPE)$(CARGO) build --release --manifest-path lemmafreq/Cargo.toml
 
 

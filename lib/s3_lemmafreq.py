@@ -140,9 +140,15 @@ class LemmaFrequencyProcessor:
     def run_compute(self) -> None:
         """Compute lemma frequencies and write the result."""
         if self.options.s3_prefix:
-            lines = self.iter_s3_jsonl_lines(
+            uris = self.list_s3_jsonl_uris(
                 self.options.s3_prefix, self.options.extension
             )
+            if not uris:
+                raise RuntimeError(
+                    "No input files found under "
+                    f"{self.options.s3_prefix} with suffix {self.options.extension}"
+                )
+            lines = self.iter_jsonl_uris(uris)
         else:
             lines = self.iter_local_jsonl_lines(self.options.input_file)
 
@@ -185,24 +191,28 @@ class LemmaFrequencyProcessor:
         self.write_json(self.options.output, output)
         log.info("Wrote %s", self.options.output)
 
-    def iter_s3_jsonl_lines(self, s3_prefix: str, extension: str) -> Iterator[str]:
-        """Yield JSONL lines from all matching S3 objects under a prefix."""
+    def list_s3_jsonl_uris(self, s3_prefix: str, extension: str) -> List[str]:
+        """List matching JSONL S3 object URIs under a prefix."""
         bucket, prefix = parse_s3_path(s3_prefix)
-        transport_params = get_transport_params(s3_prefix)
-        matched = 0
+        uris = []
 
         for file_key in sorted(yield_s3_objects(bucket, prefix)):
             if not file_key.endswith(extension):
                 continue
-            matched += 1
-            uri = f"s3://{bucket}/{file_key}"
+            uris.append(f"s3://{bucket}/{file_key}")
+
+        log.info("Found %d matching files with suffix %s", len(uris), extension)
+        return uris
+
+    def iter_jsonl_uris(self, uris: Sequence[str]) -> Iterator[str]:
+        """Yield JSONL lines from local or S3 URIs."""
+        for uri in uris:
+            transport_params = get_transport_params(uri)
             log.info("Reading %s", uri)
             with smart_open(
                 uri, "r", encoding="utf-8", transport_params=transport_params
             ) as infile:
                 yield from infile
-
-        log.info("Read %d matching files with extension %s", matched, extension)
 
     def iter_local_jsonl_lines(self, paths: Sequence[str]) -> Iterator[str]:
         """Yield JSONL lines from local files."""
