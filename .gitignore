@@ -10,3 +10,4 @@ models-package/*
 config.local.mk
 .aws/
 lemmafreq/target/
+target/
