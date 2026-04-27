@@ -45,7 +45,7 @@ help::
 	@echo "  lb-spacy-package      # Package the Luxembourgish spaCy model"
 	@echo "  help                  # Show this help message"
 
-
+.DEFAULT_GOAL := help
 
 ###
 # INCLUDES AND CONFIGURATION FILES
