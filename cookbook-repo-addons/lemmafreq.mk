@@ -43,6 +43,23 @@ LEMMAFREQ_MIN_LENGTH ?= 2
   $(call log.debug, LEMMAFREQ_MIN_LENGTH)
 
 
+empty :=
+space := $(empty) $(empty)
+comma := ,
+
+
+# VARIABLE: LEMMAFREQ_POS_TAGS_SLUG
+# Filesystem-safe POS tag selection used in lemma frequency output filenames.
+LEMMAFREQ_POS_TAGS_SLUG := $(subst $(space),_,$(subst $(comma),_,$(strip $(LEMMAFREQ_POS_TAGS))))
+  $(call log.debug, LEMMAFREQ_POS_TAGS_SLUG)
+
+
+# USER-VARIABLE: LEMMAFREQ_SELECTION_LABEL
+# Selection label included in lemma frequency output filenames.
+LEMMAFREQ_SELECTION_LABEL ?= upos-$(LEMMAFREQ_POS_TAGS_SLUG).minlength-$(LEMMAFREQ_MIN_LENGTH)
+  $(call log.debug, LEMMAFREQ_SELECTION_LABEL)
+
+
 # USER-VARIABLE: LEMMAFREQ_LOGGING_LEVEL
 # Logging level for the Python S3/Rust driver.
 LEMMAFREQ_LOGGING_LEVEL ?= $(LOGGING_LEVEL)
@@ -67,10 +84,10 @@ LOCAL_LEMMA_FREQS_BASE_PATH := $(BUILD_DIR)/$(S3_BUCKET_LINGPROC_COMPONENT)/lemm
   $(call log.debug, LOCAL_LEMMA_FREQS_BASE_PATH)
 
 
-lemmafreq_json_path = $(LOCAL_LEMMA_FREQS_BASE_PATH)/$(2)/$(1).lemmafreq.json.bz2
-lemmafreq_log_path = $(LOCAL_LEMMA_FREQS_BASE_PATH)/$(2)/$(1).lemmafreq.log.gz
-lemmafreq_s3_json_path = $(S3_LEMMA_FREQS_BASE_PATH)/$(2)/$(1).lemmafreq.json.bz2
-lemmafreq_s3_log_path = $(S3_LEMMA_FREQS_BASE_PATH)/$(2)/$(1).lemmafreq.log.gz
+lemmafreq_json_path = $(LOCAL_LEMMA_FREQS_BASE_PATH)/$(2)/$(1).$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2
+lemmafreq_log_path = $(LOCAL_LEMMA_FREQS_BASE_PATH)/$(2)/$(1).$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz
+lemmafreq_s3_json_path = $(S3_LEMMA_FREQS_BASE_PATH)/$(2)/$(1).$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2
+lemmafreq_s3_log_path = $(S3_LEMMA_FREQS_BASE_PATH)/$(2)/$(1).$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz
 
 
 setup:: check-rust-toolchain
@@ -119,10 +136,10 @@ lemmafreq-setup: setup-lemmafreq
 compute-lemma-frequencies-%-de: $(LEMMAFREQ_BIN)
 	@mkdir -p $(LOCAL_LEMMA_FREQS_BASE_PATH)/de
 	@set +e; \
-	$(PYTHON) -m impresso_cookbook.local_to_s3 --exit-2-if-exists --s3-file-exists $(S3_LEMMA_FREQS_BASE_PATH)/de/$*.lemmafreq.json.bz2 --wip --wip-max-age $(LEMMAFREQ_WIP_MAX_AGE) --create-wip $(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/de/$*.lemmafreq.json.bz2 $(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/de/$*.lemmafreq.log.gz ; status=$$?; \
+	$(PYTHON) -m impresso_cookbook.local_to_s3 --exit-2-if-exists --s3-file-exists $(S3_LEMMA_FREQS_BASE_PATH)/de/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 --wip --wip-max-age $(LEMMAFREQ_WIP_MAX_AGE) --create-wip $(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/de/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/de/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz ; status=$$?; \
 	set -e; \
 	if [ $$status -eq 2 ]; then \
-		echo "File already exists or WIP in progress, skipping processing for $*.lemmafreq.json.bz2"; \
+		echo "File already exists or WIP in progress, skipping processing for $*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2"; \
 	elif [ $$status -ne 0 ]; then \
 		exit $$status; \
 	else \
@@ -134,16 +151,16 @@ compute-lemma-frequencies-%-de: $(LEMMAFREQ_BIN)
 		--min-length $(LEMMAFREQ_MIN_LENGTH) \
 		--run-id $(RUN_ID_LINGPROC) \
 		--newspaper $* \
-		-o $(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.lemmafreq.json.bz2 \
-		--log-file $(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.lemmafreq.log.gz \
+		-o $(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 \
+		--log-file $(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz \
 		--log-level $(LEMMAFREQ_LOGGING_LEVEL) && \
 		$(PYTHON) -m impresso_cookbook.local_to_s3 \
 		--keep-timestamp-only \
 		--set-timestamp \
 		--ts-key __file__ \
 		--remove-wip \
-		$(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/de/$*.lemmafreq.json.bz2 \
-		$(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/de/$*.lemmafreq.log.gz; \
+		$(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/de/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 \
+		$(LOCAL_LEMMA_FREQS_BASE_PATH)/de/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/de/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz; \
 	fi
 
 
@@ -152,10 +169,10 @@ compute-lemma-frequencies-%-de: $(LEMMAFREQ_BIN)
 compute-lemma-frequencies-%-fr: $(LEMMAFREQ_BIN)
 	@mkdir -p $(LOCAL_LEMMA_FREQS_BASE_PATH)/fr
 	@set +e; \
-	$(PYTHON) -m impresso_cookbook.local_to_s3 --exit-2-if-exists --s3-file-exists $(S3_LEMMA_FREQS_BASE_PATH)/fr/$*.lemmafreq.json.bz2 --wip --wip-max-age $(LEMMAFREQ_WIP_MAX_AGE) --create-wip $(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/fr/$*.lemmafreq.json.bz2 $(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/fr/$*.lemmafreq.log.gz ; status=$$?; \
+	$(PYTHON) -m impresso_cookbook.local_to_s3 --exit-2-if-exists --s3-file-exists $(S3_LEMMA_FREQS_BASE_PATH)/fr/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 --wip --wip-max-age $(LEMMAFREQ_WIP_MAX_AGE) --create-wip $(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/fr/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/fr/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz ; status=$$?; \
 	set -e; \
 	if [ $$status -eq 2 ]; then \
-		echo "File already exists or WIP in progress, skipping processing for $*.lemmafreq.json.bz2"; \
+		echo "File already exists or WIP in progress, skipping processing for $*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2"; \
 	elif [ $$status -ne 0 ]; then \
 		exit $$status; \
 	else \
@@ -167,16 +184,16 @@ compute-lemma-frequencies-%-fr: $(LEMMAFREQ_BIN)
 		--min-length $(LEMMAFREQ_MIN_LENGTH) \
 		--run-id $(RUN_ID_LINGPROC) \
 		--newspaper $* \
-		-o $(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.lemmafreq.json.bz2 \
-		--log-file $(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.lemmafreq.log.gz \
+		-o $(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 \
+		--log-file $(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz \
 		--log-level $(LEMMAFREQ_LOGGING_LEVEL) && \
 		$(PYTHON) -m impresso_cookbook.local_to_s3 \
 		--keep-timestamp-only \
 		--set-timestamp \
 		--ts-key __file__ \
 		--remove-wip \
-		$(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/fr/$*.lemmafreq.json.bz2 \
-		$(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/fr/$*.lemmafreq.log.gz; \
+		$(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/fr/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 \
+		$(LOCAL_LEMMA_FREQS_BASE_PATH)/fr/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/fr/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz; \
 	fi
 
 
@@ -185,10 +202,10 @@ compute-lemma-frequencies-%-fr: $(LEMMAFREQ_BIN)
 compute-lemma-frequencies-%-en: $(LEMMAFREQ_BIN)
 	@mkdir -p $(LOCAL_LEMMA_FREQS_BASE_PATH)/en
 	@set +e; \
-	$(PYTHON) -m impresso_cookbook.local_to_s3 --exit-2-if-exists --s3-file-exists $(S3_LEMMA_FREQS_BASE_PATH)/en/$*.lemmafreq.json.bz2 --wip --wip-max-age $(LEMMAFREQ_WIP_MAX_AGE) --create-wip $(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/en/$*.lemmafreq.json.bz2 $(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/en/$*.lemmafreq.log.gz ; status=$$?; \
+	$(PYTHON) -m impresso_cookbook.local_to_s3 --exit-2-if-exists --s3-file-exists $(S3_LEMMA_FREQS_BASE_PATH)/en/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 --wip --wip-max-age $(LEMMAFREQ_WIP_MAX_AGE) --create-wip $(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/en/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/en/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz ; status=$$?; \
 	set -e; \
 	if [ $$status -eq 2 ]; then \
-		echo "File already exists or WIP in progress, skipping processing for $*.lemmafreq.json.bz2"; \
+		echo "File already exists or WIP in progress, skipping processing for $*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2"; \
 	elif [ $$status -ne 0 ]; then \
 		exit $$status; \
 	else \
@@ -200,16 +217,49 @@ compute-lemma-frequencies-%-en: $(LEMMAFREQ_BIN)
 		--min-length $(LEMMAFREQ_MIN_LENGTH) \
 		--run-id $(RUN_ID_LINGPROC) \
 		--newspaper $* \
-		-o $(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.lemmafreq.json.bz2 \
-		--log-file $(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.lemmafreq.log.gz \
+		-o $(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 \
+		--log-file $(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz \
 		--log-level $(LEMMAFREQ_LOGGING_LEVEL) && \
 		$(PYTHON) -m impresso_cookbook.local_to_s3 \
 		--keep-timestamp-only \
 		--set-timestamp \
 		--ts-key __file__ \
 		--remove-wip \
-		$(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/en/$*.lemmafreq.json.bz2 \
-		$(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/en/$*.lemmafreq.log.gz; \
+		$(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/en/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 \
+		$(LOCAL_LEMMA_FREQS_BASE_PATH)/en/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/en/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz; \
+	fi
+
+
+# PATTERN-RULE: compute-lemma-frequencies-%-lb
+#: Compute Luxembourgish lemma frequency distribution for a specific newspaper
+compute-lemma-frequencies-%-lb: $(LEMMAFREQ_BIN)
+	@mkdir -p $(LOCAL_LEMMA_FREQS_BASE_PATH)/lb
+	@set +e; \
+	$(PYTHON) -m impresso_cookbook.local_to_s3 --exit-2-if-exists --s3-file-exists $(S3_LEMMA_FREQS_BASE_PATH)/lb/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 --wip --wip-max-age $(LEMMAFREQ_WIP_MAX_AGE) --create-wip $(LOCAL_LEMMA_FREQS_BASE_PATH)/lb/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/lb/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(LOCAL_LEMMA_FREQS_BASE_PATH)/lb/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/lb/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz ; status=$$?; \
+	set -e; \
+	if [ $$status -eq 2 ]; then \
+		echo "File already exists or WIP in progress, skipping processing for $*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2"; \
+	elif [ $$status -ne 0 ]; then \
+		exit $$status; \
+	else \
+		$(PYTHON) lib/s3_lemmafreq.py compute \
+		--s3-prefix s3://$(PATH_LINGPROC_BASE)/$* \
+		--binary $(LEMMAFREQ_BIN) \
+		--language lb \
+		--pos-tags $(LEMMAFREQ_POS_TAGS) \
+		--min-length $(LEMMAFREQ_MIN_LENGTH) \
+		--run-id $(RUN_ID_LINGPROC) \
+		--newspaper $* \
+		-o $(LOCAL_LEMMA_FREQS_BASE_PATH)/lb/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 \
+		--log-file $(LOCAL_LEMMA_FREQS_BASE_PATH)/lb/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz \
+		--log-level $(LEMMAFREQ_LOGGING_LEVEL) && \
+		$(PYTHON) -m impresso_cookbook.local_to_s3 \
+		--keep-timestamp-only \
+		--set-timestamp \
+		--ts-key __file__ \
+		--remove-wip \
+		$(LOCAL_LEMMA_FREQS_BASE_PATH)/lb/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/lb/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 \
+		$(LOCAL_LEMMA_FREQS_BASE_PATH)/lb/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/lb/$*.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz; \
 	fi
 
 
@@ -225,7 +275,7 @@ compute-lemma-frequencies-$(1)-$(2): $(LEMMAFREQ_BIN)
 	$(PYTHON) -m impresso_cookbook.local_to_s3 --exit-2-if-exists --s3-file-exists $(call lemmafreq_s3_json_path,$(1),$(2)) --wip --wip-max-age $(LEMMAFREQ_WIP_MAX_AGE) --create-wip $(call lemmafreq_json_path,$(1),$(2)) $(call lemmafreq_s3_json_path,$(1),$(2)) $(call lemmafreq_log_path,$(1),$(2)) $(call lemmafreq_s3_log_path,$(1),$(2)) ; status=$$$$?; \
 	set -e; \
 	if [ $$$$status -eq 2 ]; then \
-		echo "File already exists or WIP in progress, skipping processing for $(1).lemmafreq.json.bz2"; \
+		echo "File already exists or WIP in progress, skipping processing for $(1).$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2"; \
 	elif [ $$$$status -ne 0 ]; then \
 		exit $$$$status; \
 	else \
@@ -250,37 +300,37 @@ compute-lemma-frequencies-$(1)-$(2): $(LEMMAFREQ_BIN)
 	fi
 endef
 
-$(foreach newspaper,$(ALL_NEWSPAPERS),$(foreach language,de fr en,$(eval $(call compute_lemma_frequency_rule,$(newspaper),$(language)))))
+$(foreach newspaper,$(ALL_NEWSPAPERS),$(foreach language,de fr en lb,$(eval $(call compute_lemma_frequency_rule,$(newspaper),$(language)))))
 
 
 # PATTERN-RULE: aggregate-lemma-frequencies-%
 #: Combine newspaper lemma frequency distributions for a language
 # This target merges the newspaper-level outputs for one language into the
-# corpus-level ALL.lemmafreq.json.bz2 file. It assumes newspaper-level outputs
+# corpus-level ALL.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 file. It assumes newspaper-level outputs
 # have already been computed or deliberately skipped by the S3 preflight.
 aggregate-lemma-frequencies-%:
 	@mkdir -p $(LOCAL_LEMMA_FREQS_BASE_PATH)/$*
 	$(PYTHON) lib/s3_lemmafreq.py merge \
 	--s3-prefix $(S3_LEMMA_FREQS_BASE_PATH)/$* \
-	--suffix .lemmafreq.json.bz2 \
+	--suffix .$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 \
 	--language $* \
 	--pos-tags $(LEMMAFREQ_POS_TAGS) \
 	--min-length $(LEMMAFREQ_MIN_LENGTH) \
 	--run-id $(RUN_ID_LINGPROC) \
-	-o $(LOCAL_LEMMA_FREQS_BASE_PATH)/$*/ALL.lemmafreq.json.bz2 \
-	--log-file $(LOCAL_LEMMA_FREQS_BASE_PATH)/$*/ALL.lemmafreq.log.gz \
+	-o $(LOCAL_LEMMA_FREQS_BASE_PATH)/$*/ALL.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 \
+	--log-file $(LOCAL_LEMMA_FREQS_BASE_PATH)/$*/ALL.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz \
 	--log-level $(LEMMAFREQ_LOGGING_LEVEL)
 	$(PYTHON) -m impresso_cookbook.local_to_s3 \
 	--keep-timestamp-only \
 	--set-timestamp \
 	--ts-key __file__ \
-	$(LOCAL_LEMMA_FREQS_BASE_PATH)/$*/ALL.lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/$*/ALL.lemmafreq.json.bz2 \
-	$(LOCAL_LEMMA_FREQS_BASE_PATH)/$*/ALL.lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/$*/ALL.lemmafreq.log.gz
+	$(LOCAL_LEMMA_FREQS_BASE_PATH)/$*/ALL.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 $(S3_LEMMA_FREQS_BASE_PATH)/$*/ALL.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.json.bz2 \
+	$(LOCAL_LEMMA_FREQS_BASE_PATH)/$*/ALL.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/$*/ALL.$(LEMMAFREQ_SELECTION_LABEL).lemmafreq.log.gz
 
 
 # TARGET: aggregate-all-lemma-frequencies
 #: Merge newspaper lemma frequencies for all supported languages
-aggregate-all-lemma-frequencies: aggregate-lemma-frequencies-de aggregate-lemma-frequencies-fr aggregate-lemma-frequencies-en
+aggregate-all-lemma-frequencies: aggregate-lemma-frequencies-de aggregate-lemma-frequencies-fr aggregate-lemma-frequencies-en aggregate-lemma-frequencies-lb
 
 
 # TARGET: aggregate-lemma-frequencies
@@ -303,9 +353,14 @@ compute-lemma-frequencies-fr: $(foreach newspaper,$(ALL_NEWSPAPERS),compute-lemm
 compute-lemma-frequencies-en: $(foreach newspaper,$(ALL_NEWSPAPERS),compute-lemma-frequencies-$(newspaper)-en)
 
 
+# TARGET: compute-lemma-frequencies-lb
+#: Compute Luxembourgish lemma frequencies for all newspapers
+compute-lemma-frequencies-lb: $(foreach newspaper,$(ALL_NEWSPAPERS),compute-lemma-frequencies-$(newspaper)-lb)
+
+
 # TARGET: compute-all-lemma-frequencies
 #: Compute lemma frequencies for all supported languages
-compute-all-lemma-frequencies: compute-lemma-frequencies-de compute-lemma-frequencies-fr compute-lemma-frequencies-en
+compute-all-lemma-frequencies: compute-lemma-frequencies-de compute-lemma-frequencies-fr compute-lemma-frequencies-en compute-lemma-frequencies-lb
 
 
 # TARGET: compute-lemma-frequencies
@@ -319,12 +374,13 @@ help::
 	@echo "  compute-lemma-frequencies-de       # Compute German lemma frequencies"
 	@echo "  compute-lemma-frequencies-fr       # Compute French lemma frequencies"
 	@echo "  compute-lemma-frequencies-en       # Compute English lemma frequencies"
+	@echo "  compute-lemma-frequencies-lb       # Compute Luxembourgish lemma frequencies"
 	@echo "  compute-all-lemma-frequencies      # Compute lemma frequencies for all supported languages"
 	@echo "  aggregate-lemma-frequencies-de     # Merge German newspaper lemma frequencies"
 	@echo "  aggregate-lemma-frequencies        # Merge lemma frequencies for all supported languages"
 
 
 .PHONY: setup-lemmafreq lemmafreq-setup check-rust-toolchain
-.PHONY: compute-lemma-frequencies-de compute-lemma-frequencies-fr compute-lemma-frequencies-en
+.PHONY: compute-lemma-frequencies-de compute-lemma-frequencies-fr compute-lemma-frequencies-en compute-lemma-frequencies-lb
 .PHONY: compute-all-lemma-frequencies compute-lemma-frequencies
 .PHONY: aggregate-all-lemma-frequencies aggregate-lemma-frequencies

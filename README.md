@@ -94,7 +94,7 @@ s3://<processed-bucket>/lingproc/<run-id>/BL/AATA/
 and writes one newspaper-level output:
 
 ```text
-s3://<component-bucket>/lemma-freq/<run-id>/en/BL/AATA.lemmafreq.json.bz2
+s3://<component-bucket>/lemma-freq/<run-id>/en/BL/AATA.upos-PROPN_NOUN.minlength-2.lemmafreq.json.bz2
 ```
 
 The build does not track individual S3 newspaper-year files as Make
@@ -104,7 +104,14 @@ Delete the corresponding newspaper-level lemma frequency output and its `.wip`
 marker, then rerun the language target.
 
 The language-level aggregation targets, such as `aggregate-lemma-frequencies-en`,
-merge the newspaper-level outputs into `ALL.lemmafreq.json.bz2`.
+merge the newspaper-level outputs into a matching `ALL` file, for example
+`ALL.upos-PROPN_NOUN.minlength-2.lemmafreq.json.bz2`.
+
+The filename includes the lemma selection criteria. By default,
+`LEMMAFREQ_POS_TAGS=PROPN,NOUN` and `LEMMAFREQ_MIN_LENGTH=2` produce the label
+`upos-PROPN_NOUN.minlength-2`. If you override these variables, the output
+filenames change accordingly, allowing multiple selections to coexist under the
+same run and language prefix.
 
 ## Processing options
 
