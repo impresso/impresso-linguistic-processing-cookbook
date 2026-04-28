@@ -69,11 +69,12 @@ fn collect_lemma_frequencies<R: BufRead>(
                         continue;
                     }
 
-                    // Get lemma (try "l" first, then fall back to "t")
+                    // Get lemma (try "l" first if non-empty, then fall back to "t")
                     let lemma = token
                         .get("l")
-                        .or_else(|| token.get("t"))
-                        .and_then(|v| v.as_str());
+                        .and_then(|v| v.as_str())
+                        .filter(|s| !s.is_empty())
+                        .or_else(|| token.get("t").and_then(|v| v.as_str()));
 
                     if let Some(lemma) = lemma {
                         let lemma_lower = lemma.to_lowercase();
@@ -206,5 +207,15 @@ mod tests {
         let freq = collect(input, "de", &["NOUN"], 2);
 
         assert_eq!(freq.get("zeitung"), Some(&2));
+    }
+
+    #[test]
+    fn falls_back_to_token_when_lemma_is_empty() {
+        let input = r#"{"sents":[{"lg":"lb","tok":[{"t":"Joer","p":"NOUN","o":93,"l":""},{"t":"Haus","p":"NOUN","o":100,"l":"Haus"}]}]}"#;
+
+        let freq = collect(input, "lb", &["NOUN"], 2);
+
+        assert_eq!(freq.get("joer"), Some(&1));
+        assert_eq!(freq.get("haus"), Some(&1));
     }
 }
