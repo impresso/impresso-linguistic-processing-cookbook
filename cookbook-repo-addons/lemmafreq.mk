@@ -278,6 +278,16 @@ aggregate-lemma-frequencies-%:
 	$(LOCAL_LEMMA_FREQS_BASE_PATH)/$*/ALL.lemmafreq.log.gz $(S3_LEMMA_FREQS_BASE_PATH)/$*/ALL.lemmafreq.log.gz
 
 
+# TARGET: aggregate-all-lemma-frequencies
+#: Merge newspaper lemma frequencies for all supported languages
+aggregate-all-lemma-frequencies: aggregate-lemma-frequencies-de aggregate-lemma-frequencies-fr aggregate-lemma-frequencies-en
+
+
+# TARGET: aggregate-lemma-frequencies
+#: Merge newspaper lemma frequencies for all supported languages
+aggregate-lemma-frequencies: aggregate-all-lemma-frequencies
+
+
 # TARGET: compute-lemma-frequencies-de
 #: Compute German lemma frequencies for all newspapers
 compute-lemma-frequencies-de: $(foreach newspaper,$(ALL_NEWSPAPERS),compute-lemma-frequencies-$(newspaper)-de)
@@ -311,8 +321,10 @@ help::
 	@echo "  compute-lemma-frequencies-en       # Compute English lemma frequencies"
 	@echo "  compute-all-lemma-frequencies      # Compute lemma frequencies for all supported languages"
 	@echo "  aggregate-lemma-frequencies-de     # Merge German newspaper lemma frequencies"
+	@echo "  aggregate-lemma-frequencies        # Merge lemma frequencies for all supported languages"
 
 
 .PHONY: setup-lemmafreq lemmafreq-setup check-rust-toolchain
 .PHONY: compute-lemma-frequencies-de compute-lemma-frequencies-fr compute-lemma-frequencies-en
 .PHONY: compute-all-lemma-frequencies compute-lemma-frequencies
+.PHONY: aggregate-all-lemma-frequencies aggregate-lemma-frequencies
