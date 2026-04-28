@@ -27,7 +27,7 @@ endif
 # Now we can use the logging function to show the current logging level
   $(call log.info, LOGGING_LEVEL)
 
-
+include cookbook/help.mk
 
 # Help: Show this help message
 help::
