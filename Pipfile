@@ -11,7 +11,7 @@ ipykernel = "*"
 [packages]
 smart-open= {extras = ["s3"], version = "==6.4"}
 spacy = "==3.6.1"
-python-dotenv = "*"
+python-dotenv = ">=1.2.2"
 spacy-lookups-data = "*"
 de-core-news-md = {file = "https://github.com/explosion/spacy-models/releases/download/de_core_news_md-3.6.0/de_core_news_md-3.6.0.tar.gz"}
 fr-core-news-md = {file = "https://github.com/explosion/spacy-models/releases/download/fr_core_news_md-3.6.0/fr_core_news_md-3.6.0.tar.gz"}
