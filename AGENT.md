@@ -45,6 +45,34 @@ root file for project-level guidance.
 - `.wip` objects are used to prevent concurrent workers from producing the same
   S3 target.
 
+## Make Include Sanity
+
+The root `Makefile` composes the project from cookbook fragments. When changing
+targets or help text, verify that the fragment defining a target is actually
+included by the root `Makefile`.
+
+Do not duplicate cookbook-owned target lists in the root `help::` output. Target
+help belongs next to the rule that defines the target, usually as `help-setup::`,
+`help-sync::`, `help-processing::`, `help-orchestration::`, `help-clean::`, or
+`help-aggregation::` in the corresponding included `cookbook/*.mk` file. If a
+cookbook fragment is not included, its target-specific help should not appear.
+
+Important root includes include:
+
+- `cookbook/help.mk` for topic help.
+- `cookbook/make_settings.mk` for strict Make/Shell behavior.
+- `cookbook/setup.mk` for generic setup and `update-pip-requirements-file`.
+- `cookbook/setup_lingproc.mk` for spaCy pipeline checks.
+- `cookbook/paths_rebuilt.mk`, `cookbook/paths_langident.mk`, and
+  `cookbook/paths_lingproc.mk` for path/run-ID variables.
+- `cookbook/newspaper_list.mk` before generated per-newspaper targets.
+- `cookbook/processing_lingproc.mk` for `lingproc-target`.
+- `cookbook-repo-addons/lemmafreq.mk` for lemma frequency targets.
+
+If help advertises a target, run `remake <target> -n` or `remake <target>` for a
+low-risk target to confirm the rule exists. On macOS, use `remake` or `gmake`,
+not system `/usr/bin/make`.
+
 ## Important Make Variables
 
 - `CFG`: selects a run-specific Make config.

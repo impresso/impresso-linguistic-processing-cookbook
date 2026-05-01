@@ -29,23 +29,16 @@ endif
 
 include cookbook/help.mk
 
-# Help: Show this help message
-help::
-	@echo "Usage: make <target>"
-	@echo "Targets:"
-	@echo "  setup                 # Prepare the local directories"
-	@echo "  collection            # Call make all for each newspaper found in the file $(NEWSPAPERS_TO_PROCESS_FILE)"
-	@echo "  all                   # Resync the data from the S3 bucket to the local directory and process all years of a single newspaper"
-	@echo "  newspaper             # Process a single newspaper for all years"
-	@echo "  sync                  # Sync the data from the S3 bucket to the local directory"
-	@echo "  resync                # Remove the local synchronization file stamp and sync again."
-	@echo "  clean-build           # Remove the entire build directory"
-	@echo "  clean-newspaper       # Remove the local directory for a single newspaper"
-	@echo "  update-requirements   # Update the requirements.txt file with the current pipenv requirements."
-	@echo "  lb-spacy-package      # Package the Luxembourgish spaCy model"
-	@echo "  help                  # Show this help message"
-
 .DEFAULT_GOAL := help
+
+# TARGET: update-requirements
+#: Update requirements.txt from the current Pipfile.lock
+update-requirements: update-pip-requirements-file
+
+.PHONY: update-requirements
+
+help-setup::
+	@echo "  update-requirements # Compatibility alias for update-pip-requirements-file"
 
 ###
 # INCLUDES AND CONFIGURATION FILES

@@ -368,7 +368,7 @@ compute-all-lemma-frequencies: compute-lemma-frequencies-de compute-lemma-freque
 compute-lemma-frequencies: compute-lemma-frequencies-de
 
 
-help::
+help-aggregation::
 	@echo "  setup-lemmafreq                    # Build the Rust lemma frequency binary"
 	@echo "  check-rust-toolchain               # Check Rust compiler and Cargo availability"
 	@echo "  compute-lemma-frequencies-de       # Compute German lemma frequencies"
