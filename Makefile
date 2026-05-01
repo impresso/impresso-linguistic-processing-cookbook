@@ -27,7 +27,7 @@ endif
 # Now we can use the logging function to show the current logging level
   $(call log.info, LOGGING_LEVEL)
 
-
+include cookbook/help.mk
 
 # Help: Show this help message
 help::
@@ -45,7 +45,7 @@ help::
 	@echo "  lb-spacy-package      # Package the Luxembourgish spaCy model"
 	@echo "  help                  # Show this help message"
 
-
+.DEFAULT_GOAL := help
 
 ###
 # INCLUDES AND CONFIGURATION FILES
@@ -60,11 +60,11 @@ include cookbook/setup.mk
 # Load setup rules for linguistic processing
 include cookbook/setup_lingproc.mk
 
-# Load newspaper list configuration and processing rules
-include cookbook/newspaper_list.mk
-
 # Load input path definitions for rebuilt content
 include cookbook/paths_rebuilt.mk
+
+# Load newspaper list configuration and processing rules
+include cookbook/newspaper_list.mk
 
 # Load input path definitions for language identification
 include cookbook/paths_langident.mk

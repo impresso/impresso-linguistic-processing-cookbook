@@ -24,6 +24,6 @@ jq = "*"
 impresso-cookbook = {editable = true, path = "./cookbook/lib"}
 [requires]
 python_version = "3.11"
-
+# for spacy 3.6.1
 [pipenv]
 allow_prereleases = true

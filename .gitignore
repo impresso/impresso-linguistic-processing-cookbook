@@ -1,5 +1,6 @@
 /build/
 /.venv/
+.idea/
 Makefile.local.mk
 *.d/
 .env
@@ -10,3 +11,4 @@ models-package/*
 config.local.mk
 .aws/
 lemmafreq/target/
+target/

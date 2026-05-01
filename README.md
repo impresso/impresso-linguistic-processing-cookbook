@@ -30,10 +30,14 @@ sudo bash cookbook/install_apt.sh
 sudo bash cookbook/install_brew.sh
 ```
 
+On macOS, use GNU Make via `remake` or `gmake` when running Make targets. The
+examples in this README are still written with the command name `make`, which is
+the command name used in the Makefiles and documentation.
+
 This repository uses `pipenv`.
 
 ```sh
-git clone https://github.com/impresso/impresso-linguistic-processing.git
+git clone --recursive https://github.com/impresso/impresso-linguistic-processing.git
 cd impresso-linguistic-processing
 python3.11 -mpip install pipenv
 python3.11 -mpipenv install
@@ -61,11 +65,18 @@ edit .env
 ## Local configuration
 
 Adapt the local paths for the input and output directories in the
-`config.local.mk` (see `config.local.mk.sample` for default settings.)
+`config.local.mk` (see `config.local.sample.mk` for default settings.)
 
 ```sh
-cp config.local.mk.sample config.local.mk
+cp config.local.sample.mk config.local.mk
 edit config.local.mk
+```
+
+You can also keep multiple run-specific configuration files and select one with
+`CFG`:
+
+```sh
+make help CFG=configs/config-lingproc-pos-spacy_v3.6.0-multilingual_v1-0-3.mk
 ```
 
 ## Available Make targets
@@ -75,29 +86,99 @@ The build process is controlled by the `Makefile`. Main targets include:
 ```sh
 make help                    # show available targets
 make setup                   # initialize development environment
-make newspaper               # process specific newspaper/year pairs in parallel
+make newspaper               # process the configured newspaper
+make all                     # resync input/output, then process one newspaper
 make collection              # process all newspapers
 make clean                   # clean build artifacts
 make clean-build             # remove all generated files
 ```
+
+### Lemma Frequency Targets
+
+Lemma frequency computation is implemented as newspaper/language build targets.
+For example, `compute-lemma-frequencies-BL/AATA-en` reads all matching
+year-level linguistic-processing files below:
+
+```text
+s3://<processed-bucket>/lingproc/<run-id>/BL/AATA/
+```
+
+and writes one newspaper-level output:
+
+```text
+s3://<component-bucket>/lemma-freq/<run-id>/en/BL/AATA.upos-PROPN_NOUN.minlength-2.lemmafreq.json.bz2
+```
+
+The build does not track individual S3 newspaper-year files as Make
+prerequisites. If a single year file is regenerated or replaced on S3, the
+smallest supported recomputation unit is the whole newspaper for that language.
+Delete the corresponding newspaper-level lemma frequency output and its `.wip`
+marker, then rerun the language target.
+
+The language-level aggregation targets, such as `aggregate-lemma-frequencies-en`,
+merge the newspaper-level outputs into a matching `ALL` file, for example
+`ALL.upos-PROPN_NOUN.minlength-2.lemmafreq.json.bz2`.
+
+The filename includes the lemma selection criteria. By default,
+`LEMMAFREQ_POS_TAGS=PROPN,NOUN` and `LEMMAFREQ_MIN_LENGTH=2` produce the label
+`upos-PROPN_NOUN.minlength-2`. If you override these variables, the output
+filenames change accordingly, allowing multiple selections to coexist under the
+same run and language prefix.
 
 ## Processing options
 
 For newspaper processing, several options are available:
 
 ```sh
-# Process with specific parallelism
-make newspaper MAKE_PARALLEL_OPTION=16
+# Process one newspaper from config/local variables
+make all NEWSPAPER=BL/WTCH
 
-# Process specific newspapers
-make newspaper NEWSPAPERS="GDL IMP"
+# Use a run-specific config file
+make all CFG=configs/config-lingproc-pos-spacy_v3.6.0-multilingual_v1-0-3.mk
 
-# Process specific years
-make newspaper YEARS="1900 1901"
+# Control parallelism within one newspaper
+make all NEWSPAPER=BL/WTCH NEWSPAPER_JOBS=8 MAX_LOAD=8
 
-# Combine options
-make newspaper NEWSPAPERS="GDL" YEARS="1900" MAKE_PARALLEL_OPTION=8
+# Process a collection with several newspapers in parallel
+make collection COLLECTION_JOBS=4 NEWSPAPER_JOBS=2 MAX_LOAD=8
 ```
+
+The current orchestration is newspaper-based. `NEWSPAPER` selects the newspaper
+prefix, `NEWSPAPER_JOBS` controls parallel jobs inside one newspaper, and
+`COLLECTION_JOBS` controls how many newspapers are launched concurrently by the
+collection target. `MAX_LOAD` limits parallel execution when system load is high.
+
+## Output format
+
+The linguistic processing output is newline-delimited JSON, usually compressed
+as `.jsonl.bz2`. Each output document contains:
+
+- `ci_id`: content item identifier.
+- `ts`: processing timestamp.
+- `tsents`: spaCy-processed title sentences.
+- `sents`: spaCy-processed full-text sentences.
+- `model_id`: spaCy version, model, and active pipeline components.
+- `lid_path`: language-identification source, or `default`.
+- `lingproc_git`: git version passed into the run.
+- `char_count`, `min_chars`, `max_chars`: document length metadata.
+- `title_status`: relationship between title and full text.
+
+Sentence entries contain a language code `lg` and a `tokens` array. Token fields
+are compact: `t` is surface text, `p` is UPOS, `o` is character offset, `l` is
+lemma when it differs from `t`, and `e` is entity IOB/type when present.
+
+## Validation and tests
+
+Low-risk local checks are:
+
+```sh
+python3 -m py_compile lib/spacy_linguistic_processing.py lib/s3_lemmafreq.py
+cargo test --manifest-path lemmafreq/Cargo.toml
+make help
+```
+
+Full pipeline targets usually require S3 credentials and network access. On
+macOS, run the Make examples above through `remake` or `gmake`.
 
 ## Command-Line Options for `spacy_linguistic_processing.py`
 
@@ -180,6 +261,22 @@ The impresso pipeline ensures scalable, distributed processing by:
 This architecture supports efficient, isolated builds, enabling multiple machines to process large datasets seamlessly and reliably.
 
 # Release notes:
+
+- 2026-05-01: v2026.05.01
+
+  - feat: add Rust-backed lemma frequency computation from linguistic-processing
+    JSONL outputs.
+  - feat: add newspaper/language lemma frequency targets and language-level
+    aggregation targets.
+  - feat: support configurable lemma frequency selections via
+    `LEMMAFREQ_POS_TAGS`, `LEMMAFREQ_MIN_LENGTH`, and selection labels in output
+    filenames.
+  - feat: support German, French, English, and Luxembourgish lemma frequency
+    targets.
+  - docs: add detailed lemma frequency documentation in `README-LEMMAFREQ.md`.
+  - docs: add project-level `AGENT.md` and release process guidance.
+  - note: no intentional change to the main linguistic-processing JSONL output
+    schema.
 
 - 2024-12-28: v2-0-0
 
