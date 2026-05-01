@@ -21,9 +21,9 @@ boto3 = "==1.35.95"
 jsonschema = "*"
 numpy = "==1.26.*"
 jq = "*"
-impresso-cookbook = {editable = true, path = "./cookbook/lib",version="1.0.3"}
+impresso-cookbook = {editable = true, path = "./cookbook/lib"}
 [requires]
 python_version = "3.11"
-
+# for spacy 3.6.1
 [pipenv]
 allow_prereleases = true

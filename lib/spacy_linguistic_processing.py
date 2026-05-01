@@ -34,7 +34,7 @@ from jsonschema import Draft7Validator
 import smart_open
 import spacy
 
-from s3_to_local_stamps import (
+from impresso_cookbook import (
     keep_timestamp_only,
     parse_s3_path,
     get_s3_client,

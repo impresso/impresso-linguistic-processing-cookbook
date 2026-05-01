@@ -1,0 +1,16 @@
+[package]
+name = "aggregate-lemma-frequencies"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "aggregate_lemma_frequencies"
+path = "aggregate_lemma_frequencies.rs"
+
+[dependencies]
+serde_json = "1.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3

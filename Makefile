@@ -2,81 +2,32 @@
 # Read the README.md for more information on how to use this Makefile.
 # Or run `make` for online help.
 
-###
-# SETTINGS FOR THE MAKE PROGRAM
-
-# Define the shell to use for executing commands
-SHELL := /bin/dash
-
-# Enable strict error handling
-export SHELLOPTS := errexit:pipefail
-
-# Keep intermediate files generated for the build process
-.SECONDARY:
-
-# Delete intermediate files if the target fails
-.DELETE_ON_ERROR:
-
-# Suppress all default rules
-.SUFFIXES:
-
-# A variable for representing an empty string
-EMPTY :=
-#  we cannot use log.debug here because it is not defined yet.
-#  $(call log.debug, EMPTY)
-
-###
-# SETTINGS FOR THE BUILD PROCESS
-
-# Load local config if it exists (ignore silently if it does not exist)
--include config.local.mk
-
 # Load our make logging functions
 include cookbook/log.mk
 
-# Set the logging level: DEBUG, INFO, WARNING, ERROR
-LOGGING_LEVEL ?= INFO
+# USER-VARIABLE: CONFIG_LOCAL_MAKE
+# Defines the name of the local configuration file to include.
+#
+# This file is used to override default settings and provide local configuration. If a
+# file with this name exists in the current directory, it will be included. If the file
+# does not exist, it will be silently ignored. Never add the file called config.local.mk
+# to the repository! If you have stored config files in the repository set the
+# CONFIG_LOCAL_MAKE variable to a different name.
+CONFIG_LOCAL_MAKE ?= config.local.mk
+ifdef CFG
+  CONFIG_LOCAL_MAKE := $(CFG)
+  $(info Overriding CONFIG_LOCAL_MAKE to $(CONFIG_LOCAL_MAKE) from CFG variable)
+else
+  $(call log.info, CONFIG_LOCAL_MAKE)
+endif
+# Load local config if it exists (ignore silently if it does not exists)
+-include $(CONFIG_LOCAL_MAKE)
+
+
+# Now we can use the logging function to show the current logging level
   $(call log.info, LOGGING_LEVEL)
 
-# Keep make output concise for longish recipes
-ifeq "$(filter DEBUG,$(LOGGING_LEVEL))" "DEBUG"
-  $(call log.debug, LOGGING_LEVEL)
-  MAKE_SILENCE_RECIPE ?= $(EMPTY)
-else
-  MAKE_SILENCE_RECIPE ?= @
-endif
-  $(call log.debug, MAKE_SILENCE_RECIPE)
-
-
-# Set the number of parallel launches of newspapers (uses xargs)
-# Note: For efficient parallelization the number of cores should be PARALLEL_NEWSPAPERS * MAKE_PARALLEL_PROCESSING_NEWSPAPER_YEAR
-PARALLEL_NEWSPAPERS ?= 1
-  $(call log.debug, PARALLEL_NEWSPAPERS)
-
-# Set the number of parallel jobs of newspaper-year files to process
-MAKE_PARALLEL_PROCESSING_NEWSPAPER_YEAR ?= 1 
-  $(call log.debug, MAKE_PARALLEL_PROCESSING_NEWSPAPER_YEAR)
-
-
-# Get the current git version
-ifndef git_version
-git_version := $(shell git describe --tags --always)
-endif
-  $(call log.info, git_version)
-export git_version
-
-###
-# SETTING DEFAULT VARIABLES FOR THE PROCESSING
-
-# The build directory where all local input and output files are stored
-# The content of BUILD_DIR can be removed anytime without issues regarding s3
-BUILD_DIR ?= build.d
-  $(call log.debug, BUILD_DIR)
-
-# Specify the newspaper to process. Just a suffix appended to the s3 bucket name
-# is ok! Can also be something like actionfem/actionfem-1933 to restrict further
-NEWSPAPER ?= actionfem
-  $(call log.info, NEWSPAPER)
+include cookbook/help.mk
 
 # Help: Show this help message
 help::
@@ -95,17 +46,25 @@ help::
 	@echo "  help                  # Show this help message"
 
 .DEFAULT_GOAL := help
-PHONY_TARGETS += help
 
 ###
 # INCLUDES AND CONFIGURATION FILES
 #------------------------------------------------------------------------------
 
-# Load newspaper list configuration and processing rules
-include cookbook/newspaper_list.mk
+# Set shared make options
+include cookbook/make_settings.mk
+
+# Load general setup
+include cookbook/setup.mk
+
+# Load setup rules for linguistic processing
+include cookbook/setup_lingproc.mk
 
 # Load input path definitions for rebuilt content
 include cookbook/paths_rebuilt.mk
+
+# Load newspaper list configuration and processing rules
+include cookbook/newspaper_list.mk
 
 # Load input path definitions for language identification
 include cookbook/paths_langident.mk
@@ -113,11 +72,7 @@ include cookbook/paths_langident.mk
 # Load output path definitions for linguistic processing
 include cookbook/paths_lingproc.mk 
 
-# Load general setup
-include cookbook/setup.mk
 
-# Load setup rules for linguistic processing
-include cookbook/setup_lingproc.mk
 
 ###
 # MAIN TARGETS
@@ -160,11 +115,12 @@ include cookbook/aggregators_lingproc.mk
 # FINAL DECLARATIONS AND UTILITIES
 #------------------------------------------------------------------------------
 
-# Declare all targets that don't produce files
-.PHONY: $(PHONY_TARGETS)
 
 # Include path conversion utilities
 include cookbook/local_to_s3.mk
 
 # Include testing and inspection utilities
 include cookbook-repo-addons/test_eyeball_lingproc.mk
+
+# lemmafreq tooling
+include cookbook-repo-addons/lemmafreq.mk
