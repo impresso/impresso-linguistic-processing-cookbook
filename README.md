@@ -262,6 +262,22 @@ This architecture supports efficient, isolated builds, enabling multiple machine
 
 # Release notes:
 
+- 2026-05-01: v2026.05.01
+
+  - feat: add Rust-backed lemma frequency computation from linguistic-processing
+    JSONL outputs.
+  - feat: add newspaper/language lemma frequency targets and language-level
+    aggregation targets.
+  - feat: support configurable lemma frequency selections via
+    `LEMMAFREQ_POS_TAGS`, `LEMMAFREQ_MIN_LENGTH`, and selection labels in output
+    filenames.
+  - feat: support German, French, English, and Luxembourgish lemma frequency
+    targets.
+  - docs: add detailed lemma frequency documentation in `README-LEMMAFREQ.md`.
+  - docs: add project-level `AGENT.md` and release process guidance.
+  - note: no intentional change to the main linguistic-processing JSONL output
+    schema.
+
 - 2024-12-28: v2-0-0
 
   - feat/fix: Process titles of content items (even if they sometimes are prefixes of the
