@@ -30,6 +30,10 @@ sudo bash cookbook/install_apt.sh
 sudo bash cookbook/install_brew.sh
 ```
 
+On macOS, use GNU Make via `remake` or `gmake` when running Make targets. The
+examples in this README are still written with the command name `make`, which is
+the command name used in the Makefiles and documentation.
+
 This repository uses `pipenv`.
 
 ```sh
@@ -61,11 +65,18 @@ edit .env
 ## Local configuration
 
 Adapt the local paths for the input and output directories in the
-`config.local.mk` (see `config.local.mk.sample` for default settings.)
+`config.local.mk` (see `config.local.sample.mk` for default settings.)
 
 ```sh
-cp config.local.mk.sample config.local.mk
+cp config.local.sample.mk config.local.mk
 edit config.local.mk
+```
+
+You can also keep multiple run-specific configuration files and select one with
+`CFG`:
+
+```sh
+make help CFG=configs/config-lingproc-pos-spacy_v3.6.0-multilingual_v1-0-3.mk
 ```
 
 ## Available Make targets
@@ -75,7 +86,8 @@ The build process is controlled by the `Makefile`. Main targets include:
 ```sh
 make help                    # show available targets
 make setup                   # initialize development environment
-make newspaper               # process specific newspaper/year pairs in parallel
+make newspaper               # process the configured newspaper
+make all                     # resync input/output, then process one newspaper
 make collection              # process all newspapers
 make clean                   # clean build artifacts
 make clean-build             # remove all generated files
@@ -118,18 +130,55 @@ same run and language prefix.
 For newspaper processing, several options are available:
 
 ```sh
-# Process with specific parallelism
-make newspaper MAKE_PARALLEL_OPTION=16
+# Process one newspaper from config/local variables
+make all NEWSPAPER=BL/WTCH
 
-# Process specific newspapers
-make newspaper NEWSPAPERS="GDL IMP"
+# Use a run-specific config file
+make all CFG=configs/config-lingproc-pos-spacy_v3.6.0-multilingual_v1-0-3.mk
 
-# Process specific years
-make newspaper YEARS="1900 1901"
+# Control parallelism within one newspaper
+make all NEWSPAPER=BL/WTCH NEWSPAPER_JOBS=8 MAX_LOAD=8
 
-# Combine options
-make newspaper NEWSPAPERS="GDL" YEARS="1900" MAKE_PARALLEL_OPTION=8
+# Process a collection with several newspapers in parallel
+make collection COLLECTION_JOBS=4 NEWSPAPER_JOBS=2 MAX_LOAD=8
 ```
+
+The current orchestration is newspaper-based. `NEWSPAPER` selects the newspaper
+prefix, `NEWSPAPER_JOBS` controls parallel jobs inside one newspaper, and
+`COLLECTION_JOBS` controls how many newspapers are launched concurrently by the
+collection target. `MAX_LOAD` limits parallel execution when system load is high.
+
+## Output format
+
+The linguistic processing output is newline-delimited JSON, usually compressed
+as `.jsonl.bz2`. Each output document contains:
+
+- `ci_id`: content item identifier.
+- `ts`: processing timestamp.
+- `tsents`: spaCy-processed title sentences.
+- `sents`: spaCy-processed full-text sentences.
+- `model_id`: spaCy version, model, and active pipeline components.
+- `lid_path`: language-identification source, or `default`.
+- `lingproc_git`: git version passed into the run.
+- `char_count`, `min_chars`, `max_chars`: document length metadata.
+- `title_status`: relationship between title and full text.
+
+Sentence entries contain a language code `lg` and a `tokens` array. Token fields
+are compact: `t` is surface text, `p` is UPOS, `o` is character offset, `l` is
+lemma when it differs from `t`, and `e` is entity IOB/type when present.
+
+## Validation and tests
+
+Low-risk local checks are:
+
+```sh
+python3 -m py_compile lib/spacy_linguistic_processing.py lib/s3_lemmafreq.py
+cargo test --manifest-path lemmafreq/Cargo.toml
+make help
+```
+
+Full pipeline targets usually require S3 credentials and network access. On
+macOS, run the Make examples above through `remake` or `gmake`.
 
 ## Command-Line Options for `spacy_linguistic_processing.py`
 
