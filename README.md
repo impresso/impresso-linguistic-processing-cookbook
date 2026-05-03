@@ -262,8 +262,7 @@ This architecture supports efficient, isolated builds, enabling multiple machine
 
 # Release notes:
 
-- 2026-05-01: v2026.05.01
-
+- pending: v2.0.1 (tag: v2026.05.04)
   - feat: add Rust-backed lemma frequency computation from linguistic-processing
     JSONL outputs.
   - feat: add newspaper/language lemma frequency targets and language-level
@@ -279,7 +278,6 @@ This architecture supports efficient, isolated builds, enabling multiple machine
     schema.
 
 - 2024-12-28: v2-0-0
-
   - feat/fix: Process titles of content items (even if they sometimes are prefixes of the
     full text) and store them in new tsents field.
   - feat: use updated v2 json schema with ci_id as content item id
@@ -287,18 +285,15 @@ This architecture supports efficient, isolated builds, enabling multiple machine
   - refactor: refactor monolithic Makefile into smaller reusable cookbook parts
 
 - 2024-11-30: v1-0-4
-
   - note: no change to spaCy pipelines and output content
   - fix: upload to s3 was not compressed. This has been fixed.
   - feat: separate s3 compression script to carefully compress uncompressed files on s3
   - chore: small improvements
 
 - 2024-11-27: v1-0-3
-
   - chore: improve logging and add length limit for input text
 
 - 2024-11-25: v1-0-1
-
   - fix: POS tagging of lb was buggy (all tags set to X). This has been fixed.
   - feat: Generate log files for each newspaper/year pair and upload it to s3.
   - feat: Support agreed nameing convention for output files.
@@ -307,7 +302,6 @@ This architecture supports efficient, isolated builds, enabling multiple machine
   - note: no change to spaCy pipelines apart from lb POS tag mapping
 
 - 2024-04-24: v1-0-0
-
   - First public release of the impresso linguistic processing pipeline.
 
   ## About Impresso

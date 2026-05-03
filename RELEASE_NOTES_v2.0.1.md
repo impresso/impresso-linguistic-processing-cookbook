@@ -1,8 +1,9 @@
-# Release Notes - v2026.05.01
+# Release Notes - v2.0.1
 
-**Release Date:** 2026-05-01  
-**Tag:** v2026.05.01  
-**Status:** Stable
+**Release Date:** 2026-05-04  
+**Tag:** v2026.05.04  
+**Semantic Version:** v2.0.1  
+**Status:** Pending
 
 ## Overview
 
@@ -174,4 +175,4 @@ requires live credentials and selected production inputs.
 
 - Repository: https://github.com/impresso/impresso-linguistic-processing
 - Branch prepared: `feature/rust-lemma-freq`
-- Suggested comparison: `v2025.01.02...v2026.05.01`
+- Suggested comparison: `v2025.01.02...v2026.05.04`

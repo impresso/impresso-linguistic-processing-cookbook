@@ -62,49 +62,41 @@ exception.
 
 ## Version Naming
 
-There are two related version concepts in this repository:
+There are two related but distinct version concepts in this repository:
 
-- **Git release tags** identify repository snapshots.
-- **Pipeline run versions** are Make variables such as `RUN_VERSION_LINGPROC`
-  and are embedded in `RUN_ID_LINGPROC`.
+- **Release versions** (semantic) track the data and output contract and are
+  embedded in S3 paths via `RUN_ID_LINGPROC`.
+- **Git tags** (date-based) identify repository snapshots and are independent of
+  the semantic release version.
 
-Historical git tags include both date-based and pipeline-like names:
+### Release versions — semantic scheme
 
-- `v1-0-2`
-- `v2024.04.04`
-- `v2024.11.24`
-- `v2025.01.02`
-
-For current repository releases, use date-based tags:
-
-```text
-vYYYY.MM.DD
-```
-
-Examples:
-
-- `v2026.05.01`
-- `v2026.06.15`
-
-For pipeline run versions, keep the existing run-ID style used by Make:
+The canonical version for a release is the **pipeline run version**, a semantic
+identifier carried by the Make variable `RUN_VERSION_LINGPROC` and embedded in
+`RUN_ID_LINGPROC`:
 
 ```makefile
 RUN_VERSION_LINGPROC ?= v2-0-0
 ```
 
-If a release changes the linguistic output schema, default model set, or
-processing semantics, update `RUN_VERSION_LINGPROC` intentionally and document
-the resulting `RUN_ID_LINGPROC`, for example:
+This produces a run identifier such as:
 
 ```text
 lingproc-pos-spacy_v3.6.0-multilingual_v2-0-0
 ```
 
-Use the same git tag string consistently in:
+The run version follows a semantic scheme that mirrors the S3 data:
 
-- the git tag,
-- the release notes filename,
-- the GitHub release title.
+- **Major** (`vX-0-0`): incompatible output format change, new schema, or
+  processing semantics that require a full rerun of all newspapers.
+- **Minor** (`vX-Y-0`): new supported language, model update, or additive output
+  change that does not break existing consumers.
+- **Patch** (`vX-Y-Z`): bug fix or operational change that does not affect
+  output content for already-processed data.
+
+Update `RUN_VERSION_LINGPROC` intentionally whenever a release changes linguistic
+output schema, default model set, or processing semantics, and document the
+resulting `RUN_ID_LINGPROC` in the release notes.
 
 Use the same pipeline run version consistently in:
 
@@ -112,6 +104,54 @@ Use the same pipeline run version consistently in:
 - `README.md` release notes,
 - release notes operational guidance,
 - any S3 output path examples affected by the change.
+
+Historical run versions include:
+
+- `v1-0-2`, `v1-0-3` — first-generation multilingual runs
+- `v2-0-0` — current default
+
+### Current pending release
+
+The current pending semantic release is **v2.0.1** (git tag: `v2026.05.04`,
+release notes file: `RELEASE_NOTES_v2.0.1.md`).
+
+> **Note:** Due to recompute restrictions, some newspapers processed under this
+> release may still carry run ID `v1-0-3` on S3. Release notes for v2.0.1 must
+> document which newspapers were reprocessed and which retain the historical
+> `v1-0-3` run ID, so that downstream consumers can correctly identify the
+> processing provenance of individual collections.
+
+### Git tags — date-based scheme
+
+Git tags use a date-based format to identify repository snapshots without
+encoding semantic meaning about the data version:
+
+```text
+vYYYY.MM.DD
+```
+
+Examples:
+
+- `v2026.05.04`
+- `v2026.06.15`
+
+Historical tags include both date-based and older pipeline-like names:
+
+- `v1-0-2`
+- `v2024.04.04`
+- `v2024.11.24`
+- `v2025.01.02`
+
+A single git tag may bundle code changes that do **not** bump `RUN_VERSION_LINGPROC`
+(e.g. tooling, documentation, lemma-frequency pipeline updates). Conversely, a
+`RUN_VERSION_LINGPROC` bump always warrants a new git tag, but the tag name does
+not encode the run version.
+
+Use the same git tag string consistently in:
+
+- the git tag,
+- the release notes filename (`RELEASE_NOTES_<tag>.md`),
+- the GitHub release title.
 
 ## Preparing a Release
 
@@ -345,7 +385,7 @@ RELEASE_NOTES_<tag>.md
 
 Examples:
 
-- `RELEASE_NOTES_v2026.05.01.md`
+- `RELEASE_NOTES_v2.0.1.md`
 - `RELEASE_NOTES_v2026.06.15.md`
 
 ### Suggested Structure
@@ -485,8 +525,8 @@ git push origin <tag>
 Example:
 
 ```bash
-git tag -a v2026.05.01 -m "Release v2026.05.01"
-git push origin v2026.05.01
+git tag -a v2026.05.04 -m "Release v2.0.1"
+git push origin v2026.05.04
 ```
 
 Before tagging, confirm you are on `main` and on the merged release commit:
@@ -520,9 +560,9 @@ gh release create <tag> \
 Example:
 
 ```bash
-gh release create v2026.05.01 \
-   --title "v2026.05.01" \
-   --notes-file RELEASE_NOTES_v2026.05.01.md
+gh release create v2026.05.04 \
+   --title "v2.0.1" \
+   --notes-file RELEASE_NOTES_v2.0.1.md
 ```
 
 Using `--notes-file` is preferred because the published GitHub release text then
