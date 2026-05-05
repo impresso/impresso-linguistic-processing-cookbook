@@ -176,6 +176,8 @@ class LemmaFrequencyProcessor:
                 merged[lemma] = merged.get(lemma, 0) + count
 
         log.info("Merged %d files into %d unique lemmas", source_count, len(merged))
+        char_freqs = self.compute_char_freqs(merged)
+        log.info("Computed char_freqs with %d unique characters", len(char_freqs))
         output = (
             merged
             if self.options.raw_output
@@ -186,6 +188,7 @@ class LemmaFrequencyProcessor:
                 "run_id": self.options.run_id,
                 "source_count": source_count,
                 "freqs": merged,
+                "char_freqs": char_freqs,
             }
         )
         self.write_json(self.options.output, output)
@@ -355,6 +358,15 @@ class LemmaFrequencyProcessor:
         if not isinstance(data, dict):
             raise ValueError(f"{uri} contains {type(data).__name__}, expected object")
         return data
+
+    @staticmethod
+    def compute_char_freqs(freqs: Dict[str, int]) -> Dict[str, int]:
+        """Compute weighted character frequency distribution from a lemma frequency dict."""
+        char_freqs: Dict[str, int] = {}
+        for lemma, count in freqs.items():
+            for char in lemma:
+                char_freqs[char] = char_freqs.get(char, 0) + count
+        return dict(sorted(char_freqs.items()))
 
     @staticmethod
     def frequency_payload(data: Dict[str, Any]) -> Dict[str, int]:
