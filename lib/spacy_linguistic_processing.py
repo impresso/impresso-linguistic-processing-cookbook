@@ -397,7 +397,7 @@ class LinguisticProcessing:
             Optional[Dict[str, Any]]: The processed document or None if processing
                 fails.
         """
-        docid = json_obj.get("ci_id", json_obj.get("ci_ref", json_obj["id"]))
+        docid = json_obj.get("ci_id") or json_obj.get("ci_ref") or json_obj["id"]
 
         full_text = json_obj.get(self.args.text_property)
         if full_text is None:
