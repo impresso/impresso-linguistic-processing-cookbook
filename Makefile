@@ -5,6 +5,9 @@
 # Load our make logging functions
 include cookbook/log.mk
 
+# Set shared make options (defines EMPTY and other variables local config files may rely on)
+include cookbook/make_settings.mk
+
 # USER-VARIABLE: CONFIG_LOCAL_MAKE
 # Defines the name of the local configuration file to include.
 #
@@ -44,20 +47,23 @@ help-setup::
 # INCLUDES AND CONFIGURATION FILES
 #------------------------------------------------------------------------------
 
-# Set shared make options
-include cookbook/make_settings.mk
-
 # Load general setup
 include cookbook/setup.mk
 
 # Load setup rules for linguistic processing
 include cookbook/setup_lingproc.mk
 
+# Load newspaper list configuration and processing rules
+include cookbook/newspaper_list.mk
+
 # Load input path definitions for rebuilt content
 include cookbook/paths_rebuilt.mk
 
-# Load newspaper list configuration and processing rules
-include cookbook/newspaper_list.mk
+# Load input path definitions for canonical content (defines CANONICAL_PATH_SEGMENT)
+# Only needed when USE_CANONICAL=1, which paths_langident.mk relies on below.
+ifeq ($(value USE_CANONICAL),1)
+include cookbook/paths_canonical.mk
+endif
 
 # Load input path definitions for language identification
 include cookbook/paths_langident.mk
