@@ -1,4 +1,4 @@
-# AGENT.md
+# AGENTS.md
 
 ## Purpose
 
@@ -29,6 +29,9 @@ root file for project-level guidance.
 - Python 3.11 is expected.
 - The project normally uses `pipenv`, but local `venv/` or `.venv/`
   environments are also normal for local work.
+- Prefer the project virtual environment for local Python commands. Use
+  `.venv/bin/python` directly when it exists, and pass
+  `PYTHON=.venv/bin/python` to Make targets that invoke Python.
 - On macOS, use GNU Make via `remake` or `gmake`; `/usr/bin/make` is too old.
 - Keep command examples and Makefile target names written as `make` in docs.
 - S3 credentials come from environment variables or `.env`:
@@ -105,9 +108,9 @@ not system `/usr/bin/make`.
 Use the smallest checks that match the change:
 
 ```sh
-python3 -m py_compile lib/spacy_linguistic_processing.py lib/s3_lemmafreq.py
+.venv/bin/python -m py_compile lib/spacy_linguistic_processing.py lib/s3_lemmafreq.py
 cargo test --manifest-path lemmafreq/Cargo.toml
-make help
+PYTHON=.venv/bin/python make help
 ```
 
 On macOS, run the Make command through `remake` or `gmake`.
