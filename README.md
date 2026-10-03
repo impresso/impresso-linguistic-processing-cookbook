@@ -93,6 +93,44 @@ make clean                   # clean build artifacts
 make clean-build             # remove all generated files
 ```
 
+### Input discovery and skipped work
+
+`make newspaper` and the default `make collection` workers synchronize first,
+then start processing in a separate Make invocation. Sync operations refresh
+their selected S3 scopes on every synchronization, even when a `.last_synced`
+marker exists. Unchanged per-file and per-directory stamp timestamps are
+preserved. Each refresh makes an S3 listing and metadata requests for matching
+objects. Each module retains its existing filters and dangling-stamp policy.
+
+`make processing-target` uses the input stamps already present locally. It
+reports the newspaper, selected years, input count, expected output count, and
+number of local output files present. An empty input selection fails with the
+local pattern and S3 prefix to check. Set `LINGPROC_ALLOW_EMPTY_INPUT=1` only
+when an empty selection is intentional. Local output presence does not verify
+that the corresponding S3 object still exists.
+
+For manual synchronization, run these commands separately, using the same
+`CFG`, `NEWSPAPER`, and any `NEWSPAPER_YEARS` selection:
+
+```sh
+make sync-rebuilt CFG=configs/config-lingproc-pos-spacy_v3.6.0-multilingual_v1-0-3.mk NEWSPAPER=BNF/bocfo
+make processing-target CFG=configs/config-lingproc-pos-spacy_v3.6.0-multilingual_v1-0-3.mk NEWSPAPER=BNF/bocfo -j 30
+```
+
+Collection runs report the selected newspaper-list path and entry count, and
+reuse an existing list. To discover newly added newspapers, explicitly replace
+the list before running the collection:
+
+```sh
+make refresh-newspaper-list CFG=configs/config-lingproc-pos-spacy_v3.6.0-multilingual_v1-0-3.mk
+make collection CFG=configs/config-lingproc-pos-spacy_v3.6.0-multilingual_v1-0-3.mk
+```
+
+`refresh-newspaper-list` replaces `NEWSPAPERS_TO_PROCESS_FILE`, including a
+custom selection file if one is specified. Ordinary collection runs preserve
+that file. Failed or empty discovery leaves an existing list intact; an empty
+selected list fails before collection workers are launched.
+
 ### Lemma Frequency Targets
 
 Lemma frequency computation is implemented as newspaper/language build targets.
