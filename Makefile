@@ -5,8 +5,11 @@
 # Load our make logging functions
 include cookbook/log.mk
 
-# Set shared make options (defines EMPTY and other variables local config files may rely on)
-include cookbook/make_settings.mk
+# Load the extensible help targets before local and shared setup.
+include cookbook/help.mk
+
+# Local config files use EMPTY to request unsilenced recipes.
+EMPTY :=
 
 # USER-VARIABLE: CONFIG_LOCAL_MAKE
 # Defines the name of the local configuration file to include.
@@ -19,10 +22,8 @@ include cookbook/make_settings.mk
 CONFIG_LOCAL_MAKE ?= config.local.mk
 ifdef CFG
   CONFIG_LOCAL_MAKE := $(CFG)
-  $(info Overriding CONFIG_LOCAL_MAKE to $(CONFIG_LOCAL_MAKE) from CFG variable)
-else
-  $(call log.info, CONFIG_LOCAL_MAKE)
 endif
+  $(call log.info, CONFIG_LOCAL_MAKE)
 # Load local config if it exists (ignore silently if it does not exists)
 -include $(CONFIG_LOCAL_MAKE)
 
@@ -30,7 +31,8 @@ endif
 # Now we can use the logging function to show the current logging level
   $(call log.info, LOGGING_LEVEL)
 
-include cookbook/help.mk
+# Set shared make options before loading processing rules.
+include cookbook/make_settings.mk
 
 .DEFAULT_GOAL := help
 
@@ -41,7 +43,7 @@ update-requirements: update-pip-requirements-file
 .PHONY: update-requirements
 
 help-setup::
-	@echo "  update-requirements # Compatibility alias for update-pip-requirements-file"
+	@echo "  make update-requirements # Compatibility alias for update-pip-requirements-file"
 
 ###
 # INCLUDES AND CONFIGURATION FILES
