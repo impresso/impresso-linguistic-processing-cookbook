@@ -54,6 +54,7 @@ include cookbook/setup.mk
 
 # Load setup rules for linguistic processing
 include cookbook/setup_lingproc.mk
+include cookbook/aws.mk
 
 # Load newspaper list configuration and processing rules
 include cookbook/newspaper_list.mk
