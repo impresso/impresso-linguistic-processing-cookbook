@@ -369,15 +369,15 @@ compute-lemma-frequencies: compute-lemma-frequencies-de
 
 
 help-aggregation::
-	@echo "  setup-lemmafreq                    # Build the Rust lemma frequency binary"
-	@echo "  check-rust-toolchain               # Check Rust compiler and Cargo availability"
-	@echo "  compute-lemma-frequencies-de       # Compute German lemma frequencies"
-	@echo "  compute-lemma-frequencies-fr       # Compute French lemma frequencies"
-	@echo "  compute-lemma-frequencies-en       # Compute English lemma frequencies"
-	@echo "  compute-lemma-frequencies-lb       # Compute Luxembourgish lemma frequencies"
-	@echo "  compute-all-lemma-frequencies      # Compute lemma frequencies for all supported languages"
-	@echo "  aggregate-lemma-frequencies-de     # Merge German newspaper lemma frequencies"
-	@echo "  aggregate-lemma-frequencies        # Merge lemma frequencies for all supported languages"
+	@echo "  make setup-lemmafreq                    # Build the Rust lemma frequency binary"
+	@echo "  make check-rust-toolchain               # Check Rust compiler and Cargo availability"
+	@echo "  make compute-lemma-frequencies-de       # Compute German lemma frequencies"
+	@echo "  make compute-lemma-frequencies-fr       # Compute French lemma frequencies"
+	@echo "  make compute-lemma-frequencies-en       # Compute English lemma frequencies"
+	@echo "  make compute-lemma-frequencies-lb       # Compute Luxembourgish lemma frequencies"
+	@echo "  make compute-all-lemma-frequencies      # Compute lemma frequencies for all supported languages"
+	@echo "  make aggregate-lemma-frequencies-de     # Merge German newspaper lemma frequencies"
+	@echo "  make aggregate-lemma-frequencies        # Merge lemma frequencies for all supported languages"
 
 
 .PHONY: setup-lemmafreq lemmafreq-setup check-rust-toolchain
