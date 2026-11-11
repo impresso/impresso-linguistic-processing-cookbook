@@ -217,7 +217,11 @@ def split_text_into_chunks(text: str, chunk_size: int) -> List[Tuple[int, str]]:
 
 
 def process_text_with_spacy(
-    text: str, lang: str, nlp: spacy.language.Language, chunk_size: int = 0
+    text: str,
+    lang: str,
+    nlp: spacy.language.Language,
+    chunk_size: int = 0,
+    stats: Optional[collections.Counter] = None,
 ) -> list:
     """Process text with spaCy and extract linguistic features.
 
@@ -230,11 +234,16 @@ def process_text_with_spacy(
         lang (str): Language code
         nlp (spacy.language.Language): Loaded spaCy model
         chunk_size (int): Maximum characters per spaCy call; 0 disables chunking
+        stats (Counter, optional): If given, texts that needed more than one
+            chunk are counted in TEXTS-CHUNKED and their chunks in CHUNKS-PROCESSED
 
     Returns:
         list: List of sentences with tokenization and linguistic annotations
     """
     chunks = split_text_into_chunks(text, chunk_size)
+    if stats is not None and len(chunks) > 1:
+        stats["TEXTS-CHUNKED"] += 1
+        stats["CHUNKS-PROCESSED"] += len(chunks)
     preprocessed_text = []
     tag_accessor = "tag_" if lang == "lb" else "pos_"
 
@@ -547,11 +556,19 @@ class LinguisticProcessing:
         preprocessed_title = []
         if title_text:
             preprocessed_title = process_text_with_spacy(
-                title_text, lang, self.language_proc_units[lang], self.args.chunk_size
+                title_text,
+                lang,
+                self.language_proc_units[lang],
+                self.args.chunk_size,
+                self.stats,
             )
 
         preprocessed_text = process_text_with_spacy(
-            full_text, lang, self.language_proc_units[lang], self.args.chunk_size
+            full_text,
+            lang,
+            self.language_proc_units[lang],
+            self.args.chunk_size,
+            self.stats,
         )
         title_status = {k: v for k, v in title_status.items() if v is not None}
         for k, v in title_status.items():

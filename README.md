@@ -207,6 +207,10 @@ the chunk size. The chunks are processed separately with `nlp.pipe`, and their
 sentences are concatenated into a single `sents` (or `tsents`) list. Token
 offsets `o` always refer to the full, unchunked text. Whitespace left alone
 at a cut is attached to the following sentence, matching the unchunked output.
+The run log statistics count chunking: `TEXTS-CHUNKED` is the number of titles
+or full texts that needed more than one chunk, and `CHUNKS-PROCESSED` is the
+total number of chunks from those texts. Like the other counters, they appear
+only when non-zero.
 
 Chunked and unchunked output have the same tokens, offsets, and sentence
 boundaries in practice. Tags and lemmas can differ slightly near a cut, because
