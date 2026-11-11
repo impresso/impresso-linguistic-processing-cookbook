@@ -13,8 +13,13 @@ For every content item in the lingproc file, the script checks:
 - each token's text equals the rebuilt text at its offset,
 - offsets increase and tokens do not overlap,
 - every gap between tokens is exactly one space,
-- the reconstruction equals the rebuilt text (`ft` for `sents`, the title for
-  `tsents`), apart from leading and trailing whitespace that spaCy drops.
+- the reconstruction, filled with spaces from offset 0 to the end of the
+  original, equals the rebuilt text exactly (`ft` for `sents`, the title for
+  `tsents`).
+
+A text counts as OK only on exact equality. Texts that differ only in leading
+or trailing whitespace not covered by any token are counted separately as
+EDGE-WHITESPACE and also fail, unless --allow-edge-whitespace is given.
 
 Both the current output (`ci_id`, `tokens`) and the older one (`id`, `tok`)
 are accepted.
@@ -103,12 +108,19 @@ def check_text(
         pos = o + len(t)
         if len(problems) >= max_errors:
             return problems
+    if problems:
+        return problems
     text, start, _ = reconstruct(sents)
-    if text != original.strip() and text != original[start : start + len(text)]:
-        problems.append("reconstruction differs from original text")
-    elif original[:start].strip() or original[start + len(text) :].strip():
-        problems.append("non-whitespace text outside the tokens")
-    return problems
+    exact = " " * start + text
+    exact += " " * (len(original) - len(exact))
+    if exact == original:
+        return []
+    if original[start : start + len(text)] == text and not (
+        original[:start].strip() or original[start + len(text) :].strip()
+    ):
+        head, tail = original[:start], original[start + len(text) :]
+        return [f"EDGE-WHITESPACE: uncovered leading {head!r} / trailing {tail!r}"]
+    return ["reconstruction differs from original text"]
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -120,6 +132,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     parser.add_argument(
         "--show", type=int, default=10, help="Failing items to print (default 10)"
+    )
+    parser.add_argument(
+        "--allow-edge-whitespace",
+        action="store_true",
+        help="Do not fail texts that differ only in uncovered leading/trailing whitespace",
     )
     parser.add_argument("--log-level", default="INFO")
     args = parser.parse_args(argv)
@@ -145,9 +162,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         for field, original in (("sents", full_text), ("tsents", title)):
             sents = doc.get(field) or []
             if not sents:
+                if original.strip():
+                    stats[f"{field.upper()}-MISSING-FOR-NONEMPTY-TEXT"] += 1
                 continue
             stats[f"{field.upper()}-CHECKED"] += 1
             problems = check_text(original, sents)
+            if problems and problems[0].startswith("EDGE-WHITESPACE"):
+                stats[f"{field.upper()}-EDGE-WHITESPACE"] += 1
+                if args.allow_edge_whitespace:
+                    continue
             if problems:
                 stats[f"{field.upper()}-FAILED"] += 1
                 if shown < args.show:

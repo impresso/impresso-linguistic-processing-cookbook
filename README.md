@@ -253,13 +253,49 @@ lemma when it differs from `t`, and `e` is entity IOB/type when present.
 Low-risk local checks are:
 
 ```sh
-python3 -m py_compile lib/spacy_linguistic_processing.py lib/s3_lemmafreq.py
+python3 -m py_compile lib/spacy_linguistic_processing.py lib/s3_lemmafreq.py lib/check_lingproc_reconstruction.py
 cargo test --manifest-path lemmafreq/Cargo.toml
 make help
 ```
 
 Full pipeline targets usually require S3 credentials and network access. On
 macOS, run the Make examples above through `remake` or `gmake`.
+
+### Checking text reconstruction
+
+`lib/check_lingproc_reconstruction.py` checks that the rebuilt texts can be
+reconstructed exactly from a lingproc file. The output has no space-after
+property; instead, each token's offset `o` points into the rebuilt text, and
+spaCy emits all whitespace other than a single space after a token as a token
+of its own. The script places every token at its offset, fills the gaps with
+single spaces, and requires the result to equal the rebuilt `ft` (for `sents`)
+and the title (for `tsents`) exactly. This also verifies the chunked
+processing of long texts.
+
+```sh
+python lib/check_lingproc_reconstruction.py \
+  s3://122-rebuilt-final/FedGaz/FedGazFr/FedGazFr-1850.jsonl.bz2 \
+  s3://140-processed-data-sandbox/lingproc/lingproc-pos-spacy_v3.6.0-multilingual_v1-0-4-test-chunking/FedGaz/FedGazFr/FedGazFr-1850.jsonl.bz2
+```
+
+Both arguments may be local paths or `s3://` URLs (credentials from `.env`).
+The rebuilt and lingproc files must come from the same rebuilt version;
+otherwise offsets no longer match. The script prints counters such as
+`SENTS-OK`, `SENTS-FAILED`, `TSENTS-OK`, `REBUILT-ITEMS-WITHOUT-LINGPROC`
+(items skipped by lingproc, for example too short), and
+`SENTS-MISSING-FOR-NONEMPTY-TEXT`. It writes up to `--show N` failing items
+(default 10) with their first problems to stderr, and exits with status 1 if
+any text fails.
+
+Options:
+
+- `--text-property`: rebuilt full-text property (default: `ft`).
+- `--show`: number of failing items to print (default: 10).
+- `--allow-edge-whitespace`: accept texts that differ only in leading or
+  trailing whitespace not covered by any token (counted as `EDGE-WHITESPACE`).
+
+Both the current lingproc format (`ci_id`, `tokens`) and the older one (`id`,
+`tok`) are accepted.
 
 ## Command-Line Options for `spacy_linguistic_processing.py`
 
