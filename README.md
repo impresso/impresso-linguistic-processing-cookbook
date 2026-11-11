@@ -186,6 +186,43 @@ prefix, `NEWSPAPER_JOBS` controls parallel jobs inside one newspaper, and
 `COLLECTION_JOBS` controls how many newspapers are launched concurrently by the
 collection target. `MAX_LOAD` limits parallel execution when system load is high.
 
+## Document length filtering and chunking
+
+Each content item is measured as the number of characters in its title plus its
+full text. Items outside the configured range are not truncated; they are left
+out of the output entirely and counted in the run log statistics:
+
+| Make variable | Script option | Default | Effect |
+|---|---|---|---|
+| `LINGPROC_MIN_DOC_LENGTH` | `--min-doc-length` | 50 | Shorter items are skipped (`CONTENT-ITEMS-SHORT`) |
+| `LINGPROC_MAX_DOC_LENGTH` | `--max-doc-length` | 500000 | Longer items are skipped (`CONTENT-ITEMS-LONG`) |
+| `LINGPROC_CHUNK_SIZE` | `--chunk-size` | 50000 | Texts longer than this are processed in chunks; `0` disables chunking |
+
+Chunking keeps spaCy's memory use bounded for long documents. A title or full
+text longer than the chunk size is split into chunks of at most that many
+characters. Each cut is placed after a newline if one exists in the second half
+of the window, otherwise after a sentence-final `.`, `!`, or `?` followed by a
+space, otherwise after any space or tab, and only as a last resort at exactly
+the chunk size. The chunks are processed separately with `nlp.pipe`, and their
+sentences are concatenated into a single `sents` (or `tsents`) list. Token
+offsets `o` always refer to the full, unchunked text. Whitespace left alone
+at a cut is attached to the following sentence, matching the unchunked output.
+
+Chunked and unchunked output have the same tokens, offsets, and sentence
+boundaries in practice. Tags and lemmas can differ slightly near a cut, because
+the models see less context there, and an entity spanning a cut is split.
+
+Set the variables on the command line or in a run config, for example:
+
+```sh
+make lingproc-target NEWSPAPER=FedGaz/FedGazDe LINGPROC_MAX_DOC_LENGTH=1000000
+```
+
+Changing these values does not reprocess existing outputs: Make treats year
+files that already exist on S3 as done. To apply new thresholds to existing
+data, remove the affected outputs and their WIP markers, reprocess them, and
+then recompute the affected newspaper/language lemma frequency outputs.
+
 ## Output format
 
 The linguistic processing output is newline-delimited JSON, usually compressed
@@ -198,7 +235,9 @@ as `.jsonl.bz2`. Each output document contains:
 - `model_id`: spaCy version, model, and active pipeline components.
 - `lid_path`: language-identification source, or `default`.
 - `lingproc_git`: git version passed into the run.
-- `char_count`, `min_chars`, `max_chars`: document length metadata.
+- `char_count`: characters in title plus full text.
+- `min_chars`, `max_chars`: length thresholds used for the run (see
+  [Document length filtering and chunking](#document-length-filtering-and-chunking)).
 - `title_status`: relationship between title and full text.
 
 Sentence entries contain a language code `lg` and a `tokens` array. Token fields
@@ -225,7 +264,9 @@ The `lib/spacy_linguistic_processing.py` script supports several command-line op
 - `--lid`: Path to the language identification file.
 - `--language`: Specify a language code to use for all items.
 - `-o`, `--output-path`: Path to the output file (default: `out.jsonl`).
-- `--min-doc-length`: Minimum document length to process (default: 50).
+- `--min-doc-length`: Minimum document length (title plus full text, in characters) to process (default: 50).
+- `--max-doc-length`: Maximum document length (title plus full text, in characters) to process (default: 500000).
+- `--chunk-size`: Process texts longer than this many characters in chunks; `0` disables chunking (default: 50000).
 - `--validate`: Validate the final language identification JSON against the schema.
 - `--text-property`: Specify the JSON property that contains the full text (default: `ft`).
 - `--git-version`: Set the git version to include in the output. If not set, the `GIT_VERSION` environment variable is used.

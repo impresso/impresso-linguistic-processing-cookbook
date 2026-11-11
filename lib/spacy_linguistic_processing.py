@@ -8,6 +8,8 @@ Functions:
     get_next_doc: Generates documents from a file line by line.
     output_doc: Outputs a document to the specified file.
     read_langident: Reads language identification results from a file.
+    split_text_into_chunks: Splits long texts at whitespace into bounded chunks.
+    process_text_with_spacy: Annotates a text with spaCy, chunk by chunk if needed.
 
 Classes:
     LinguisticProcessing: Processes documents, adding linguistic annotations.
@@ -24,7 +26,7 @@ import os
 import re
 import sys
 import time
-from typing import Any, Dict, Generator, IO, Optional, Sequence
+from typing import Any, Dict, Generator, IO, List, Optional, Sequence, Tuple
 from pathlib import Path
 
 import dotenv
@@ -175,28 +177,96 @@ def analyze_title_in_text(title: str, full_text: str) -> Dict[str, bool]:
     return analysis
 
 
-def process_text_with_spacy(text: str, lang: str, nlp: spacy.language.Language) -> list:
+def split_text_into_chunks(text: str, chunk_size: int) -> List[Tuple[int, str]]:
+    """Split text into chunks of at most ``chunk_size`` characters.
+
+    Cuts are placed after a newline if possible, otherwise after a sentence-final
+    punctuation mark followed by a space, otherwise after any whitespace, searched
+    in the second half of each window. Only if no whitespace is found is the text
+    cut hard at ``chunk_size``. Concatenating the chunks yields the original text.
+
+    Args:
+        text (str): Input text
+        chunk_size (int): Maximum chunk length in characters (must be > 0)
+
+    Returns:
+        List[Tuple[int, str]]: (character offset in ``text``, chunk text) pairs
+    """
+    if chunk_size <= 0 or len(text) <= chunk_size:
+        return [(0, text)]
+    chunks = []
+    start = 0
+    n = len(text)
+    while start < n:
+        end = start + chunk_size
+        if end >= n:
+            chunks.append((start, text[start:]))
+            break
+        lower = start + chunk_size // 2
+        cut = text.rfind("\n", lower, end)
+        if cut == -1:
+            cut = max(text.rfind(p, lower, end - 1) for p in (". ", "! ", "? "))
+            if cut != -1:
+                cut += 1
+        if cut == -1:
+            cut = max(text.rfind(" ", lower, end), text.rfind("\t", lower, end))
+        cut = end if cut == -1 else cut + 1
+        chunks.append((start, text[start:cut]))
+        start = cut
+    return chunks
+
+
+def process_text_with_spacy(
+    text: str, lang: str, nlp: spacy.language.Language, chunk_size: int = 0
+) -> list:
     """Process text with spaCy and extract linguistic features.
+
+    Texts longer than ``chunk_size`` characters are split into chunks (see
+    split_text_into_chunks) that are processed separately; token offsets refer
+    to the full text, and the sentences of all chunks are concatenated.
 
     Args:
         text (str): Input text to process
         lang (str): Language code
         nlp (spacy.language.Language): Loaded spaCy model
+        chunk_size (int): Maximum characters per spaCy call; 0 disables chunking
 
     Returns:
         list: List of sentences with tokenization and linguistic annotations
     """
-    doc = nlp(text)
+    chunks = split_text_into_chunks(text, chunk_size)
     preprocessed_text = []
     tag_accessor = "tag_" if lang == "lb" else "pos_"
 
+    pending_space: list = []
+    for (chunk_offset, _), doc in zip(chunks, nlp.pipe(c for _, c in chunks)):
+        for sent in _doc_to_sentences(doc, lang, tag_accessor, chunk_offset):
+            if all(not t["t"].strip() for t in sent["tokens"]):
+                # whitespace-only sentence produced by a chunk cut: spaCy attaches
+                # such whitespace to the following sentence in an unchunked run
+                pending_space.extend(sent["tokens"])
+                continue
+            if pending_space:
+                sent["tokens"] = pending_space + sent["tokens"]
+                pending_space = []
+            preprocessed_text.append(sent)
+    if pending_space:
+        preprocessed_text.append({"lg": lang, "tokens": pending_space})
+    return preprocessed_text
+
+
+def _doc_to_sentences(
+    doc: "spacy.tokens.Doc", lang: str, tag_accessor: str, offset: int
+) -> list:
+    """Convert a spaCy Doc into the output sentence structure."""
+    preprocessed_text = []
     for sent in doc.sents:
         preprocessed_sent = []
         for tok in sent:
             tok_dict = {
                 "t": tok.text,
                 "p": map_tag(getattr(tok, tag_accessor), lang),
-                "o": tok.idx,
+                "o": tok.idx + offset,
             }
             if tok.text != tok.lemma_:
                 tok_dict["l"] = tok.lemma_
@@ -206,7 +276,8 @@ def process_text_with_spacy(text: str, lang: str, nlp: spacy.language.Language) 
 
             preprocessed_sent.append(tok_dict)
 
-        preprocessed_text.append({"lg": lang, "tokens": preprocessed_sent})
+        if preprocessed_sent:
+            preprocessed_text.append({"lg": lang, "tokens": preprocessed_sent})
 
     return preprocessed_text
 
@@ -362,7 +433,7 @@ class LinguisticProcessing:
         if lang not in self.language_proc_units and lang in lang2model:
             nlp = spacy.load(lang2model.get(lang, lang), disable=["parser"])
             nlp.add_pipe("sentencizer", first=True)
-            nlp.max_length = self.args.max_doc_length + 1
+            nlp.max_length = max(self.args.chunk_size, self.args.max_doc_length) + 1
             self.language_proc_units[lang] = nlp
             self.model_versions[lang] = (
                 "spacy@"
@@ -476,11 +547,11 @@ class LinguisticProcessing:
         preprocessed_title = []
         if title_text:
             preprocessed_title = process_text_with_spacy(
-                title_text, lang, self.language_proc_units[lang]
+                title_text, lang, self.language_proc_units[lang], self.args.chunk_size
             )
 
         preprocessed_text = process_text_with_spacy(
-            full_text, lang, self.language_proc_units[lang]
+            full_text, lang, self.language_proc_units[lang], self.args.chunk_size
         )
         title_status = {k: v for k, v in title_status.items() if v is not None}
         for k, v in title_status.items():
@@ -683,9 +754,19 @@ def parse_arguments(args: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--max-doc-length",
         type=int,
-        default=50000,
+        default=500000,
         help=(
             "Maximum document length (title together with full text) to process"
+            " (default %(default)s)"
+        ),
+    )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=50000,
+        help=(
+            "Split texts longer than this many characters into chunks that are"
+            " processed separately and concatenated; 0 disables chunking"
             " (default %(default)s)"
         ),
     )

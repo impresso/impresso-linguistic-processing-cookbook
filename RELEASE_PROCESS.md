@@ -204,7 +204,8 @@ changes any output contract or processing semantics:
 - sentence or token field names,
 - lemma behavior,
 - NER output behavior,
-- document filtering thresholds,
+- document filtering thresholds (`LINGPROC_MIN_DOC_LENGTH`,
+  `LINGPROC_MAX_DOC_LENGTH`) and text chunking (`LINGPROC_CHUNK_SIZE`),
 - JSON schema validation behavior,
 - `model_id`, `lid_path`, `lingproc_git`, or other metadata.
 

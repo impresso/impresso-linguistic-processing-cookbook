@@ -86,6 +86,10 @@ not system `/usr/bin/make`.
 - `COLLECTION_JOBS`: number of newspapers launched concurrently.
 - `MAX_LOAD`: load limit for Make/GNU parallel.
 - `LINGPROC_LANGIDENT_NEEDED`: whether lingproc depends on langident inputs.
+- `LINGPROC_MIN_DOC_LENGTH`, `LINGPROC_MAX_DOC_LENGTH`: content items whose
+  title plus full text is outside this character range are skipped.
+- `LINGPROC_CHUNK_SIZE`: texts longer than this are processed by spaCy in
+  chunks and concatenated; `0` disables chunking.
 - `RUN_ID_LINGPROC`: computed output run identifier.
 - `LEMMAFREQ_POS_TAGS`, `LEMMAFREQ_MIN_LENGTH`: lemma frequency selection.
 
