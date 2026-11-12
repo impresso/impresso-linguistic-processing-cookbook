@@ -60,9 +60,9 @@ LINGPROC_WIP_MAX_AGE := 1
 # MODEL_ID_LINGPROC := spacy_v3.6.0-multilingual
 
 # # Document length thresholds and chunking (characters, title plus full text)
-# LINGPROC_MIN_DOC_LENGTH := 50
-# LINGPROC_MAX_DOC_LENGTH := 500000
-# LINGPROC_CHUNK_SIZE := 50000
+LINGPROC_MIN_DOC_LENGTH := 50
+LINGPROC_MAX_DOC_LENGTH := 1000000
+LINGPROC_CHUNK_SIZE := 50000
 
 # # Reprocess and upload even if S3 output exists, or upload only if newer
 # LINGPROC_FORCE_OVERWRITE_OPTION := --force-overwrite
