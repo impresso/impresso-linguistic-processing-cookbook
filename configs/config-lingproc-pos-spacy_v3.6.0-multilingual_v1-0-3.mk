@@ -1,88 +1,69 @@
+# Production lingproc run: spaCy 3.6.0 multilingual, run version v1-0-3
+#
+# Usage:
+#   make collection CFG=configs/config-lingproc-pos-spacy_v3.6.0-multilingual_v1-0-3.mk
+#   make newspaper CFG=configs/config-lingproc-pos-spacy_v3.6.0-multilingual_v1-0-3.mk NEWSPAPER=FedGaz/FedGazDe
 
 USE_CANONICAL := 1
 NEWSPAPER_HAS_PROVIDER := 1
-LOGGING_LEVEL := DEBUG
-SHELL := /bin/bash 
+SHELL := /bin/bash
+LOGGING_LEVEL := INFO
+MAKE_SILENCE_RECIPE := $(EMPTY)
+
+# Input: rebuilt data; the language is taken from the rebuilt files
 S3_BUCKET_REBUILT := 122-rebuilt-final
 LINGPROC_LANGIDENT_NEEDED := 0
-# NEWSPAPER_FNMATCH := BNF/*
 
+# Output
 S3_BUCKET_LINGPROC := 142-processed-data-final
 RUN_VERSION_LINGPROC := v1-0-3
+
+# Newspaper selection: discovered from the rebuilt bucket, years in random order
 S3_PREFIX_NEWSPAPERS_TO_PROCESS_BUCKET := $(S3_BUCKET_REBUILT)
-MAKE_SILENCE_RECIPE := $(EMPTY)
-# NEWSPAPER := BL/WTCH
-#LINGPROC_KEEP_TIMESTAMP_ONLY_OPTION :=
-LOGGING_LEVEL := INFO
-#NEWSPAPER_YEAR_SORTING := shuf | head -n 1 
 NEWSPAPER_YEAR_SORTING := shuf
+# NEWSPAPER_FNMATCH := BNF/*
+# NEWSPAPER := BL/WTCH
 
-LINGPROC_LANGIDENT_NEEDED := 0
-#LINGPROC_S3_OUTPUT_DRY_RUN := --s3-output-dry-run
-#LINGPROC_VALIDATE_OPTION := 
-# Sample configuration for local build settings
-
-
-# # Set the logging level: DEBUG, INFO, WARNING, ERROR
-# LOGGING_LEVEL := INFO
-
-# # Set the number of parallel embedding jobs to run
-# MAKE_PARALLEL_PROCESSING_NEWSPAPER_YEAR := --jobs 14
-
-# # Set the Git version (default is the output of `git describe --tags --always`)
-# GIT_VERSION := $(shell git describe --tags --always)
-
-# # The build directory where all local input and output files are stored
-# BUILD_DIR := build.d
-
-# # A file containing a space-separated line with all newspapers to process
-# NEWSPAPERS_TO_PROCESS_FILE := $(BUILD_DIR)/newspapers.txt
-
-# # Order the years of a newspaper to process by recency (default is random order)
-# NEWSPAPER_YEAR_SORTING := shuf | head -n 1 
-# # For the default order, comment the line above and uncomment the line below
-# # NEWSPAPER_YEAR_SORTING := cat
-
-# # The input bucket for rebuilt data
-S3_BUCKET_REBUILT := 122-rebuilt-final
-
-# # The input bucket for processed data
-# IN_S3_BUCKET_PROCESSED_DATA := 42-processed-data-final
-
-# # The process label for input data
-# IN_PROCESS_LABEL := langident
-
-# # The run version for input data
-# IN_RUN_VERSION := v1-4-4
-
-# # The output bucket for processed data
-# OUT_S3_BUCKET_PROCESSED_DATA := 40-processed-data-sandbox
-
-# # The process label for output data
-# OUT_PROCESS_LABEL := lingproc
-
-# # The task for output data
-# OUT_TASK := pos
-
-# # The model ID for output data
-# OUT_MODEL_ID := spacy_v3.6.0-multilingual
-
-# # The run version for output data
-# OUT_RUN_VERSION := v1-0-2
-
-# # Prevent any output to S3 even if s3-output-path is set
-# PROCESSING_S3_OUTPUT_DRY_RUN :=
-
-# PROCESSING_QUIET_OPTION := 
-
-# # Keep only the local timestamp output files after uploading
-PROCESSING_KEEP_TIMESTAMP_ONLY_OPTION := --keep-timestamp-only
-
-# # Quit the processing if the output file already exists in S3
+# Skip outputs that already exist on S3; S3 WIP locking against concurrent workers
 PROCESSING_QUIT_IF_S3_OUTPUT_EXISTS_OPTION := --quit-if-s3-output-exists
-
-# Enable S3 WIP locking
 LINGPROC_WIP_ENABLED := 1
-
 # Treat locks older than this many hours as stale
 LINGPROC_WIP_MAX_AGE := 1
+
+# Further settings and their cookbook defaults (uncomment to override)
+
+# # Disable JSON schema validation of the output
+# LINGPROC_VALIDATE_OPTION :=
+
+# # Build directory for local stamps, logs and transient outputs
+# BUILD_DIR := build.d
+
+# # File with the newspapers (or PROVIDER/NEWSPAPER/YEAR items) to process
+# NEWSPAPERS_TO_PROCESS_FILE := $(BUILD_DIR)/newspapers.txt
+
+# # Parallelism: newspapers in parallel, jobs per newspaper, load limit
+# # (defaults are derived from the number of CPUs)
+# COLLECTION_JOBS := 4
+# NEWSPAPER_JOBS := 2
+# MAX_LOAD := 8
+
+# # Language identification input, only used with LINGPROC_LANGIDENT_NEEDED := 1
+# S3_BUCKET_LANGIDENT := 140-processed-data-sandbox
+# PROCESS_LABEL_LANGIDENT := langident
+# TASK_LANGIDENT := lid
+# MODEL_ID_LANGIDENT := ensemble_multilingual
+# RUN_VERSION_LANGIDENT := v2-0-2
+
+# # Output run identifier parts; RUN_VERSION_LINGPROC is set above
+# PROCESS_LABEL_LINGPROC := lingproc
+# TASK_LINGPROC := pos
+# MODEL_ID_LINGPROC := spacy_v3.6.0-multilingual
+
+# # Document length thresholds and chunking (characters, title plus full text)
+# LINGPROC_MIN_DOC_LENGTH := 50
+# LINGPROC_MAX_DOC_LENGTH := 500000
+# LINGPROC_CHUNK_SIZE := 50000
+
+# # Reprocess and upload even if S3 output exists, or upload only if newer
+# LINGPROC_FORCE_OVERWRITE_OPTION := --force-overwrite
+# LINGPROC_UPLOAD_IF_NEWER_OPTION := --upload-if-newer
