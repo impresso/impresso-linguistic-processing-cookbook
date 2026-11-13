@@ -20,13 +20,13 @@ NEWSPAPER_YEAR_SORTING ?= shuf
 # NEWSPAPER_YEAR_SORTING ?= cat
 
 # The input bucket for rebuilt data
-S3_BUCKET_REBUILT ?= 22-rebuilt-final
+S3_BUCKET_REBUILT ?= 122-rebuilt-final
 
 # The run version for input data
 RUN_VERSION_LANGINDENT ?= v1-4-4
 
 # The output bucket for processed data
-S3_BUCKET_LINGPROC ?= 40-processed-data-sandbox
+S3_BUCKET_LINGPROC ?= 140-processed-data-sandbox
 
 # The task for output data
 TASK_LINGPROC ?= pos

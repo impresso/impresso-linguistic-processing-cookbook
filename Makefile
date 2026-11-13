@@ -51,6 +51,7 @@ help-setup::
 
 # Load general setup
 include cookbook/setup.mk
+include cookbook/setup_python.mk
 
 # Load setup rules for linguistic processing
 include cookbook/setup_lingproc.mk
