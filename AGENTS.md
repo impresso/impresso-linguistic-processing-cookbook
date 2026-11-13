@@ -21,7 +21,7 @@ linguistic outputs.
 - `lemmafreq/aggregate_lemma_frequencies.rs`: Rust streaming lemma counter.
 - `cookbook/`: shared Make/Python cookbook framework used by this project.
 
-The `cookbook/AGENT.md` file documents the reusable cookbook layer. Prefer this
+The `cookbook/AGENTS.md` file documents the reusable cookbook layer. Prefer this
 root file for project-level guidance.
 
 ## Tooling And Environment
